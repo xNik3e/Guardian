@@ -12,10 +12,10 @@ import pl.xnik3e.Guardian.Services.FireStoreService;
 
 import java.util.List;
 
+@Getter
 @Service
 public class MessageUtils {
 
-    @Getter
     private final FireStoreService fireStoreService;
 
     @Autowired
@@ -23,55 +23,105 @@ public class MessageUtils {
         this.fireStoreService = fireStoreService;
     }
 
-
+    /**
+     * Checks if member has any role included in rolesToDelete list.
+     * If the user has granted special privileges, the method returns false.
+     * <p>
+     * Privileges are defined as merged list of excludedRoleIds and excludedUserIds.
+     * <p>
+     *
+     * @param member Member to check
+     * @return true if member has any role included in rolesToDelete list, false otherwise
+     */
     public boolean checkRolesToDelete(Member member) {
-        /* check for specific role idk why, maybe for some fcking snowflake? */
-        /*
-        String uID = String.valueOf(member.getIdLong());
-       if (uID.equals("SOME WEIRD ID"))
-            return false;*/
-
-        List<String> memberRoles = getMemberRoleList(member);
-
-        if(checkAuthority(member))
+        if (checkAuthority(member))
             return false;
 
+        List<String> memberRoles = getMemberRoleList(member);
         return performRolesToDeleteCheck(memberRoles);
     }
 
+
+    /**
+     * Get list of member roles as String
+     * <p></p>
+     *
+     * @param member Member to get roles from
+     * @return List of member roles as String
+     */
     @NotNull
-    private static List<String> getMemberRoleList(Member member) {
+    public static List<String> getMemberRoleList(Member member) {
         return member.getRoles()
                 .stream()
                 .map(Role::getIdLong)
                 .map(String::valueOf).toList();
     }
 
+    /**
+     * Perform list search for rolesToDelete
+     * <p></p>
+     *
+     * @param userRoles List of user roles
+     * @return true if member has any role included in rolesToDelete list, false otherwise
+     */
     private boolean performRolesToDeleteCheck(List<String> userRoles) {
-        List<String> rolesToDelete = fireStoreService.getModel().getRolesToDelete();
+        List<String> rolesToDelete = fireStoreService.getModel()
+                .getRolesToDelete();
         return userRoles.stream().anyMatch(rolesToDelete::contains);
     }
 
 
+    /**
+     * Checks if member has any role included in excludedRoleIds list.
+     * <p></p>
+     *
+     * @param userRoles List of user roles
+     * @return true if member has any role included in excludedRoleIds list, false otherwise
+     */
     private boolean performRolesToExcludeCheck(List<String> userRoles) {
-        List<String> excludedRoles = fireStoreService.getModel().getExcludedRoleIds();
+        List<String> excludedRoles = fireStoreService.getModel()
+                .getExcludedRoleIds();
         return userRoles.stream().anyMatch(excludedRoles::contains);
     }
 
-    private boolean checkAuthority(Member member){
+    /**
+     * Checks if member has any privileges.
+     * <p></p>
+     *
+     * @param member Member to check
+     * @return true if member has any role included in excludedRoleIds list or matching id in excludedUserIds list, false otherwise
+     */
+    private boolean checkAuthority(Member member) {
         List<String> memberRoles = getMemberRoleList(member);
-        return performRolesToExcludeCheck(memberRoles);
+        return performRolesToExcludeCheck(memberRoles) || fireStoreService.getModel()
+                .getExcludedUserIds()
+                .contains(member.getId());
     }
 
-    private boolean checkTrigger(MessageReceivedEvent event){
-        boolean respondByPrefix = fireStoreService.getModel().isRespondByPrefix();
-        if(respondByPrefix){
+    /**
+     * Checks if message should be processed by bot.
+     * <p></p>
+     *
+     * @param event MessageReceivedEvent to check
+     * @return true if message should be processed by bot, false otherwise
+     */
+    public boolean checkTrigger(MessageReceivedEvent event) {
+        boolean respondByPrefix = fireStoreService.getModel()
+                .isRespondByPrefix();
+
+        if (respondByPrefix) {
             return checkPrefix(event);
         }
         return checkBotMention(event);
     }
 
-    private boolean checkBotMention(MessageReceivedEvent event){
+    /**
+     * Checks if bot was mentioned in message.
+     * <p></p>
+     * @param event MessageReceivedEvent to check
+     * @return true if bot was mentioned in message, false otherwise
+     */
+    private boolean checkBotMention(MessageReceivedEvent event) {
         return event.getMessage()
                 .getMentions()
                 .getMentions(Message.MentionType.USER)
@@ -79,14 +129,32 @@ public class MessageUtils {
                 .anyMatch(user -> user.getIdLong() == event.getJDA().getSelfUser().getIdLong());
     }
 
-    private boolean checkPrefix(MessageReceivedEvent event){
-        String prefix = fireStoreService.getModel().getPrefix();
-        return event.getMessage().getContentRaw().startsWith(prefix);
+    /**
+     * Checks if message starts with prefix.
+     * <p></p>
+     * @param event MessageReceivedEvent to check
+     * @return true if message starts with prefix, false otherwise
+     */
+    private boolean checkPrefix(MessageReceivedEvent event) {
+        String prefix = fireStoreService.getModel()
+                .getPrefix();
+        return event
+                .getMessage()
+                .getContentRaw()
+                .startsWith(prefix);
     }
 
+    /**
+     * Sends message to user in private channel.
+     * <p></p>
+     * @param member Member to send private message to
+     * @param message Message to send
+     */
     public void openPrivateChannelAndMessageUser(Member member, String message) {
-        member.getUser().openPrivateChannel().queue(privateChannel -> {
-            privateChannel.sendMessage(message).queue();
-        });
+        member.getUser()
+                .openPrivateChannel()
+                .queue(privateChannel -> {
+                    privateChannel.sendMessage(message).queue();
+                });
     }
 }

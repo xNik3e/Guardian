@@ -1,9 +1,5 @@
 package pl.xnik3e.Guardian.listeners;
 
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Role;
-import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleAddEvent;
-import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleRemoveEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.jetbrains.annotations.NotNull;
@@ -15,7 +11,7 @@ import pl.xnik3e.Guardian.Utils.MessageUtils;
 import java.util.List;
 
 @Component
-public class MyEventListener extends ListenerAdapter {
+public class MessageCommandListener extends ListenerAdapter {
 
     private final MessageUtils messageUtils;
     private final FireStoreService fireStoreService;
@@ -23,37 +19,23 @@ public class MyEventListener extends ListenerAdapter {
     private final List<String> userIds;
 
     @Autowired
-    public MyEventListener(MessageUtils messageUtils) {
+    public MessageCommandListener(MessageUtils messageUtils) {
         this.messageUtils = messageUtils;
         this.fireStoreService = messageUtils.getFireStoreService();
         userIds = fireStoreService.getModel().getRolesToDelete();
     }
 
-
     @Override
-    public void onGuildMemberRoleAdd(@NotNull GuildMemberRoleAddEvent event) {
-        Member member = event.getMember();
-        if (messageUtils.checkRolesToDelete(member)) {
-            String userId = member.getId();
-            if (!userIds.contains(userId)) {
-                userIds.add(userId);
-                fireStoreService.updateUserIds();
-            }
+    public void onMessageReceived(@NotNull MessageReceivedEvent event) {
+        if(messageUtils.checkTrigger(event)){
+            //TODO: Add command handling
+
         }
     }
+}
 
-    @Override
-    public void onGuildMemberRoleRemove(@NotNull GuildMemberRoleRemoveEvent event) {
-        Member member = event.getMember();
-        if (messageUtils.checkRolesToDelete(member)) {
-            long userId = member.getIdLong();
-            if (userIds.contains(userId)) {
-                userIds.remove(userId);
-                fireStoreService.updateUserIds();
-            }
-        }
-    }
 
+/*
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
         super.onMessageReceived(event);
@@ -67,9 +49,5 @@ public class MyEventListener extends ListenerAdapter {
                 event.getChannel().sendMessage("Nie masz uprawnień do tego").queue();
             }
         }
-    }
+    }*/
 
-
-
-
-}

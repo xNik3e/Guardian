@@ -21,10 +21,10 @@ public class ConfigModel {
     private String channelIdToSendDeletedMessages;
 
     public ConfigModel() {
-        this.excludedChannelIds = new ArrayList<>();
-        this.excludedRoleIds = new ArrayList<>();
-        this.excludedUserIds = new ArrayList<>();
-        this.rolesToDelete = new ArrayList<>();
+        this.excludedChannelIds = new ArrayList<>(); //Channels to exclude from operating
+        this.excludedRoleIds = new ArrayList<>(); //Roles that have granted special privileges
+        this.excludedUserIds = new ArrayList<>(); //Users that have granted special privileges
+        this.rolesToDelete = new ArrayList<>(); //Included user roles that will result in member being banned
         getDefaultConfig();
     }
 
@@ -33,10 +33,11 @@ public class ConfigModel {
         this.afterStartupInit = model.afterStartupInit;
         this.respondByPrefix = model.respondByPrefix;
         this.prefix = model.prefix;
-        this.excludedRoleIds.clear();
-        this.excludedChannelIds.clear();
 
+        this.excludedRoleIds.clear();
         this.excludedRoleIds.addAll(model.excludedRoleIds);
+
+        this.excludedChannelIds.clear();
         this.excludedChannelIds.addAll(model.excludedChannelIds);
 
         this.excludedUserIds.clear();
@@ -62,9 +63,9 @@ public class ConfigModel {
         this.rolesToDelete.add("1164645019769131029"); //<16
 
         //excluded roles
-        this.excludedUserIds.add("372811196627156993"); //Moderator
-        this.excludedUserIds.add("672490701769932801"); //Pomocnik Administracji
-        this.excludedUserIds.add("379296005385879553"); //Administrator
-        this.excludedUserIds.add("451069025607352320"); //PIO
+        this.excludedRoleIds.add("372811196627156993"); //Moderator
+        this.excludedRoleIds.add("672490701769932801"); //Pomocnik Administracji
+        this.excludedRoleIds.add("379296005385879553"); //Administrator
+        this.excludedRoleIds.add("451069025607352320"); //PIO
     }
 }

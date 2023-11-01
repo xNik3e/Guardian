@@ -10,7 +10,8 @@ import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
-import pl.xnik3e.Guardian.listeners.MyEventListener;
+import pl.xnik3e.Guardian.listeners.MessageCommandListener;
+import pl.xnik3e.Guardian.listeners.RoleAddRemoveListener;
 
 @Component
 @Scope("singleton")
@@ -19,11 +20,13 @@ public class GuardianDiscordBot {
     @Getter
     private final JDA jda;
     private final Dotenv config;
-    private final MyEventListener myEventListener;
+    private final RoleAddRemoveListener roleAddRemoveListener;
+    private final MessageCommandListener messageCommandListener;
 
     @Autowired
-    private GuardianDiscordBot(Firestore firestore, MyEventListener myEventListener){
-        this.myEventListener = myEventListener;
+    private GuardianDiscordBot(Firestore firestore, RoleAddRemoveListener roleAddRemoveListener, MessageCommandListener messageCommandListener){
+        this.roleAddRemoveListener = roleAddRemoveListener;
+        this.messageCommandListener = messageCommandListener;
         config = Dotenv.configure().load();
         try {
             JDABuilder builder = JDABuilder
@@ -33,10 +36,12 @@ public class GuardianDiscordBot {
                     .enableIntents(GatewayIntent.MESSAGE_CONTENT)
                     .enableIntents(GatewayIntent.GUILD_MESSAGES);
 
-            builder.addEventListeners(myEventListener);
+            builder.addEventListeners(roleAddRemoveListener); //Listener for adding and removing roles
+            builder.addEventListeners(messageCommandListener); //Listener for user commands
+
             jda = builder.build().awaitReady();
         } catch (Exception e) {
-            e.printStackTrace();
+            System.out.println(e.getMessage());
             throw new RuntimeException("Failed to login to discord");
         }
     }
