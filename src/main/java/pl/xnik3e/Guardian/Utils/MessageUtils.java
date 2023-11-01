@@ -158,6 +158,12 @@ public class MessageUtils {
                 });
     }
 
+    /**
+     * Get raw command content from MessageReceivedEvent when command is invoked.
+     * <p></p>
+     * @param event MessageReceivedEvent to get command from
+     * @return raw command content
+     */
     public String rawCommandContent(MessageReceivedEvent event) {
 
         String command = event.getMessage().getContentRaw();
