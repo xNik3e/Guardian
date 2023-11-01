@@ -157,4 +157,18 @@ public class MessageUtils {
                     privateChannel.sendMessage(message).queue();
                 });
     }
+
+    public String rawCommandContent(MessageReceivedEvent event) {
+
+        String command = event.getMessage().getContentRaw();
+        if(fireStoreService.getModel().isRespondByPrefix()){
+            String prefix = fireStoreService.getModel()
+                    .getPrefix();
+            command = command.replace(prefix, "");
+        }else{
+            //delete bot mention
+            command = command.replace("<@!" + event.getJDA().getSelfUser().getId() + ">", "");
+        }
+        return command.trim();
+    }
 }
