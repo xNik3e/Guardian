@@ -1,9 +1,11 @@
-package pl.xnik3e.Guardian.components.Commands;
+package pl.xnik3e.Guardian.components.Command;
 
+import lombok.Getter;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
+import pl.xnik3e.Guardian.components.Command.Commands.TestCommand;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -11,14 +13,16 @@ import java.util.Arrays;
 import java.util.List;
 
 
+@Getter
 @Component
 public class CommandManager {
-    private MessageUtils messageUtils;
+    private final MessageUtils messageUtils;
     private final List<ICommand> commands = new ArrayList<>();
 
     @Autowired
     public CommandManager(MessageUtils messageUtils) {
         this.messageUtils = messageUtils;
+        addCommand(new TestCommand());
     }
 
     private void addCommand(ICommand cmd){
@@ -29,8 +33,9 @@ public class CommandManager {
         commands.add(cmd);
     }
 
+
     @Nullable
-    private ICommand getCommand(String search){
+    public ICommand getCommand(String search){
         String searchLower = search.toLowerCase();
         for(ICommand cmd : this.commands){
             if(cmd.getName().equals(searchLower) || cmd.getAliases().contains(searchLower)){
@@ -40,7 +45,7 @@ public class CommandManager {
         return null;
     }
 
-    void handle(MessageReceivedEvent event){
+    public void handle(MessageReceivedEvent event){
         String[] split = messageUtils.rawCommandContent(event)
                 .split("\\s+");
         String invoke = split[0].toLowerCase();

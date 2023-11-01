@@ -1,5 +1,6 @@
 package pl.xnik3e.Guardian.listeners;
 
+import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.jetbrains.annotations.NotNull;
@@ -7,29 +8,32 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import pl.xnik3e.Guardian.Services.FireStoreService;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
-
-import java.util.List;
+import pl.xnik3e.Guardian.components.Command.CommandManager;
 
 @Component
 public class MessageCommandListener extends ListenerAdapter {
 
     private final MessageUtils messageUtils;
+    private final CommandManager commandManager;
     private final FireStoreService fireStoreService;
 
-    private final List<String> userIds;
 
     @Autowired
-    public MessageCommandListener(MessageUtils messageUtils) {
+    public MessageCommandListener(MessageUtils messageUtils, CommandManager commandManager) {
         this.messageUtils = messageUtils;
         this.fireStoreService = messageUtils.getFireStoreService();
-        userIds = fireStoreService.getModel().getRolesToDelete();
+        this.commandManager = commandManager;
     }
 
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
-        if(messageUtils.checkTrigger(event)){
-            //TODO: Add command handling
+        User user = event.getAuthor();
+        if (user.isBot() || event.isWebhookMessage()) {
+            return;
+        }
 
+        if (messageUtils.checkTrigger(event)) {
+            commandManager.handle(event);
         }
     }
 }

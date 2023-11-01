@@ -12,11 +12,11 @@ import pl.xnik3e.Guardian.Models.ConfigModel;
 import java.util.ArrayList;
 import java.util.List;
 
+@Getter
 @Service
 public class FireStoreService {
 
     private final Firestore firestore;
-    @Getter
     private final ConfigModel model;
     private final List<String> userIds = new ArrayList<>();
 

@@ -1,4 +1,4 @@
-package pl.xnik3e.Guardian.components.Commands;
+package pl.xnik3e.Guardian.components.Command;
 
 import lombok.Getter;
 import me.duncte123.botcommons.commands.ICommandContext;

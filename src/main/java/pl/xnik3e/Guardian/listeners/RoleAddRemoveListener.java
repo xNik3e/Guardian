@@ -24,7 +24,7 @@ public class RoleAddRemoveListener extends ListenerAdapter {
     public RoleAddRemoveListener(MessageUtils messageUtils) {
         this.messageUtils = messageUtils;
         this.fireStoreService = messageUtils.getFireStoreService();
-        userIds = fireStoreService.getModel().getRolesToDelete();
+        userIds = fireStoreService.getUserIds();
     }
 
 
