@@ -14,7 +14,7 @@
 	<name>Guardian</name>
 	<description>Guardian bot for destroying kiddos</description>
 	<properties>
-		<java.version>21</java.version>
+		<java.version>17</java.version>
 	</properties>
 	<dependencies>
 		<dependency>

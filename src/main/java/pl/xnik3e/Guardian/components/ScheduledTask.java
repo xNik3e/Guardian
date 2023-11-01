@@ -5,15 +5,12 @@ import com.google.cloud.firestore.Firestore;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
 import pl.xnik3e.Guardian.GuardianDiscordBot;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Component
 public class ScheduledTask {
 
     private final Firestore firestore;
@@ -21,7 +18,6 @@ public class ScheduledTask {
     private final List<Long> userIds = new ArrayList<>();
     private final JDA jda;
 
-    @Autowired
     public ScheduledTask(Firestore firestore, GuardianDiscordBot bot) {
         this.firestore = firestore;
         this.docRef = firestore.collection("blacklist").document("toDelete");

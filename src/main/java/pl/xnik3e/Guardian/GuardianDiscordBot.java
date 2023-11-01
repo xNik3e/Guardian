@@ -6,8 +6,6 @@ import lombok.Getter;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.requests.GatewayIntent;
-import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder;
-import net.dv8tion.jda.api.sharding.ShardManager;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
@@ -21,9 +19,11 @@ public class GuardianDiscordBot {
     @Getter
     private final JDA jda;
     private final Dotenv config;
+    private final MyEventListener myEventListener;
 
     @Autowired
-    private GuardianDiscordBot(Firestore firestore){
+    private GuardianDiscordBot(Firestore firestore, MyEventListener myEventListener){
+        this.myEventListener = myEventListener;
         config = Dotenv.configure().load();
         try {
             JDABuilder builder = JDABuilder
@@ -33,7 +33,6 @@ public class GuardianDiscordBot {
                     .enableIntents(GatewayIntent.MESSAGE_CONTENT)
                     .enableIntents(GatewayIntent.GUILD_MESSAGES);
 
-            MyEventListener myEventListener = new MyEventListener(firestore);
             builder.addEventListeners(myEventListener);
             jda = builder.build().awaitReady();
         } catch (Exception e) {

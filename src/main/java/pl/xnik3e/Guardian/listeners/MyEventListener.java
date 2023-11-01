@@ -1,87 +1,57 @@
 package pl.xnik3e.Guardian.listeners;
 
-import com.google.api.core.ApiFuture;
-import com.google.cloud.firestore.DocumentReference;
-import com.google.cloud.firestore.DocumentSnapshot;
-import com.google.cloud.firestore.Firestore;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
-import net.dv8tion.jda.api.entities.channel.Channel;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleAddEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleRemoveEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import pl.xnik3e.Guardian.Services.FireStoreService;
+import pl.xnik3e.Guardian.Utils.MessageUtils;
 
-import java.util.ArrayList;
 import java.util.List;
 
+@Component
 public class MyEventListener extends ListenerAdapter {
-    public final Firestore firestore;
-    public final DocumentReference docRef;
-    public static final long ROLE_ID = 1164645019769131029L;
-    public final List<Long> userIds = new ArrayList<>();
 
-    public MyEventListener(Firestore firestore) {
-        this.firestore = firestore;
-        this.docRef = firestore.collection("blacklist").document("toDelete");
-        addSnapshotListener();
+    private final MessageUtils messageUtils;
+    private final FireStoreService fireStoreService;
+
+    private final List<String> userIds;
+
+    @Autowired
+    public MyEventListener(MessageUtils messageUtils) {
+        this.messageUtils = messageUtils;
+        this.fireStoreService = messageUtils.getFireStoreService();
+        userIds = fireStoreService.getModel().getRolesToDelete();
     }
 
-    private void addSnapshotListener() {
-        docRef.addSnapshotListener((snapshot, e) -> {
-            if (e != null) {
-                System.err.println("Listen failed: " + e);
-                return;
-            }
-            if (snapshot != null && snapshot.exists()) {
-                userIds.clear();
-                userIds.addAll((List<Long>) snapshot.get("userId"));
-            } else {
-                System.out.print("Current data: null");
-            }
-        });
-    }
 
     @Override
     public void onGuildMemberRoleAdd(@NotNull GuildMemberRoleAddEvent event) {
-        //super.onGuildMemberRoleAdd(event);
-        List<Role> roles = event.getRoles();
         Member member = event.getMember();
-        if (roles.stream().anyMatch(role -> role.getIdLong() == ROLE_ID)) {
-            //openPrivateChannelAndNotifyUser(member, true);
-            long userId = member.getIdLong();
+        if (messageUtils.checkRolesToDelete(member)) {
+            String userId = member.getId();
             if (!userIds.contains(userId)) {
                 userIds.add(userId);
-                docRef.update("userId", userIds);
+                fireStoreService.updateUserIds();
             }
         }
     }
 
     @Override
     public void onGuildMemberRoleRemove(@NotNull GuildMemberRoleRemoveEvent event) {
-        //super.onGuildMemberRoleRemove(event);
-        List<Role> roles = event.getRoles();
         Member member = event.getMember();
-        if (roles.stream().anyMatch(role -> role.getIdLong() == ROLE_ID)) {
+        if (messageUtils.checkRolesToDelete(member)) {
             long userId = member.getIdLong();
             if (userIds.contains(userId)) {
                 userIds.remove(userId);
-                docRef.update("userId", userIds);
+                fireStoreService.updateUserIds();
             }
         }
-    }
-
-    /**
-     * TODO: TESTING PURPOSES ONLY
-     */
-    private void openPrivateChannelAndNotifyUser(Member member, boolean isRole) {
-        member.getUser().openPrivateChannel().queue(privateChannel -> {
-            StringBuilder sb = new StringBuilder();
-            sb.append("Witaj na serwerze ").append(member.getGuild().getName()).append("!\n");
-            sb.append(isRole ? "Otrzymałeś rolę do wyjebania" : "Zostałeś pozbawiony roli do wyjebania");
-            privateChannel.sendMessage(sb.toString()).queue();
-        });
     }
 
     @Override
@@ -98,4 +68,8 @@ public class MyEventListener extends ListenerAdapter {
             }
         }
     }
+
+
+
+
 }
