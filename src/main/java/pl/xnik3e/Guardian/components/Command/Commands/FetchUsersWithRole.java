@@ -9,6 +9,9 @@ import pl.xnik3e.Guardian.components.Command.CommandContext;
 import pl.xnik3e.Guardian.components.Command.ICommand;
 
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 public class FetchUsersWithRole implements ICommand {
 
     private final MessageUtils messageUtils;
@@ -23,19 +26,29 @@ public class FetchUsersWithRole implements ICommand {
         Guild guild = ctx.getGuild();
         List<String> args = ctx.getArgs();
         if(args.size() == 1){
-            Role role = guild.getRoleById(args.get(0));
+            //regular expression to check whether role was mentioned or not
+            Matcher matcher = Pattern.compile("\\d+")
+                    .matcher(args.get(0));
+
+            if(!matcher.find()){
+                messageUtils.openPrivateChannelAndMessageUser(ctx.getMember().getUser(), "Invalid role id");
+                return;
+            }
+            String roleId = matcher.group(0);
+            Role role = guild.getRoleById(roleId);
             if(role == null){
-                messageUtils.openPrivateChannelAndMessageUser(ctx.getMember(), "Invalid role id");
+                messageUtils.openPrivateChannelAndMessageUser(ctx.getMember().getUser(), "Invalid role id");
                 return;
             }
             Task<List<Member>> task = guild.findMembersWithRoles(role);
-            System.out.println(task.isStarted() + "");
             task.onSuccess(members -> {
                 StringBuilder builder = new StringBuilder();
                 builder.append("Users with role: ").append(role.getName()).append("\n");
                 members.forEach(member -> builder.append(member.getUser().getName()).append("\t").append(member.getUser().getId()).append("\n"));
-                messageUtils.openPrivateChannelAndMessageUser(ctx.getMember(), builder.toString());
+                messageUtils.openPrivateChannelAndMessageUser(ctx.getMember().getUser(), builder.toString());
             });
+        }else{
+            messageUtils.openPrivateChannelAndMessageUser(ctx.getMember().getUser(), "You should only provide single role Id or role mention");
         }
     }
 
@@ -48,6 +61,8 @@ public class FetchUsersWithRole implements ICommand {
     public String getHelp() {
         return null;
     }
+
+
 
     @Override
     public List<String> getAliases() {

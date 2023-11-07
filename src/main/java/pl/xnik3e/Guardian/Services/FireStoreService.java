@@ -92,7 +92,7 @@ public class FireStoreService {
         thread.start();
     }
 
-    private void updateConfigModel() {
+    public void updateConfigModel() {
         ApiFuture<WriteResult> future = firestore.collection("config").document("config").set(model);
         if (future.isDone()) {
             System.out.println("Updated config");

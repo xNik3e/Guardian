@@ -52,8 +52,8 @@ public class ConfigModel {
         this.afterStartupInit = false;
         this.respondByPrefix = true;
         this.prefix = "&";
-        this.channelIdToSendLog = "1123245083798552657"; //TODO: TEMP CHANGE LATER
-        this.channelIdToSendDeletedMessages = "1123245083798552657"; //TODO: TEMP CHANGE LATER
+        this.channelIdToSendLog = ""; //TODO: TEMP CHANGE LATER
+        this.channelIdToSendDeletedMessages = ""; //TODO: TEMP CHANGE LATER
 
 
         this.excludedChannelIds.clear();

@@ -4,6 +4,7 @@ import lombok.Getter;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -147,16 +148,17 @@ public class MessageUtils {
     /**
      * Sends message to user in private channel.
      * <p></p>
-     * @param member Member to send private message to
+     * @param user Member to send private message to
      * @param message Message to send
      */
-    public void openPrivateChannelAndMessageUser(Member member, String message) {
-        member.getUser()
+    public void openPrivateChannelAndMessageUser(User user, String message) {
+       user
                 .openPrivateChannel()
                 .queue(privateChannel -> {
                     privateChannel.sendMessage(message).queue();
                 });
     }
+
 
     /**
      * Get raw command content from MessageReceivedEvent when command is invoked.

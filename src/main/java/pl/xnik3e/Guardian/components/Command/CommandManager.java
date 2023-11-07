@@ -1,11 +1,13 @@
 package pl.xnik3e.Guardian.components.Command;
 
 import lombok.Getter;
+import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
 import pl.xnik3e.Guardian.components.Command.Commands.FetchUsersWithRole;
+import pl.xnik3e.Guardian.components.Command.Commands.Init;
 import pl.xnik3e.Guardian.components.Command.Commands.TestCommand;
 
 import javax.annotation.Nullable;
@@ -25,6 +27,7 @@ public class CommandManager {
         this.messageUtils = messageUtils;
         addCommand(new TestCommand());
         addCommand(new FetchUsersWithRole(messageUtils));
+        addCommand(new Init(messageUtils));
     }
 
     private void addCommand(ICommand cmd) {
@@ -56,10 +59,26 @@ public class CommandManager {
         String invoke = split[0].toLowerCase();
         ICommand cmd = this.getCommand(invoke);
 
-        if (cmd != null) {
+        if(cmd == null){
+            User user = event.getAuthor();
+            messageUtils.openPrivateChannelAndMessageUser(user, "Wrong command");
+        }
+
+        if (checkInit(cmd)) {
             List<String> args = Arrays.asList(split).subList(1, split.length);
             CommandContext ctx = new CommandContext(event, args);
             cmd.handle(ctx);
+        }else{
+            User user = event.getAuthor();
+            event.getMessage().delete().queue();
+            messageUtils.openPrivateChannelAndMessageUser(user, "You should run the *init* command first");
         }
+    }
+
+    public boolean checkInit(ICommand cmd){
+        boolean a = cmd.isAfterInit();
+        boolean b = messageUtils.getFireStoreService().getModel().isInit();
+
+        return (a && b) || (!a && !b);
     }
 }

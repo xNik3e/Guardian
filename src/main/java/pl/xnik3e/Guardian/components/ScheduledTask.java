@@ -2,7 +2,7 @@ package pl.xnik3e.Guardian.components;
 
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import pl.xnik3e.Guardian.GuardianDiscordBot;
@@ -35,7 +35,7 @@ public class ScheduledTask {
     public void notifyAllUsers(){
         Guild guild = jda.getGuildById(1112886826559078470L);
         for(String id : userIds){
-            Member member = guild.getMemberById(id);
+            User member = guild.getMemberById(id).getUser();
             if(member != null){
                 messageUtils.openPrivateChannelAndMessageUser(member,
                         "Witaj, zostałeś zbanowany na serwerze " + guild.getName() + " przez bota Guardian. Jeśli chcesz się odwołać, napisz do administracji serwera.");
