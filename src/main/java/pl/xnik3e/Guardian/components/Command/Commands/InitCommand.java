@@ -10,13 +10,13 @@ import pl.xnik3e.Guardian.components.Command.ICommand;
 
 import java.util.List;
 
-public class Init implements ICommand {
+public class InitCommand implements ICommand {
 
     private final MessageUtils messageUtils;
     private final FireStoreService fireStoreService;
     private final ConfigModel model;
 
-    public Init(MessageUtils messageUtils) {
+    public InitCommand(MessageUtils messageUtils) {
         this.messageUtils = messageUtils;
         this.fireStoreService = messageUtils.getFireStoreService();
         this.model = fireStoreService.getModel();

@@ -12,11 +12,11 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class FetchUsersWithRole implements ICommand {
+public class FetchUsersWithRoleCommand implements ICommand {
 
     private final MessageUtils messageUtils;
 
-    public FetchUsersWithRole(MessageUtils messageUtils) {
+    public FetchUsersWithRoleCommand(MessageUtils messageUtils) {
         this.messageUtils = messageUtils;
     }
 
@@ -59,7 +59,9 @@ public class FetchUsersWithRole implements ICommand {
 
     @Override
     public String getHelp() {
-        return null;
+        return "Returns list of users with specified role\n" +
+                "Usage: ```{prefix or mention}getuserswithrole <role id>```\n"+
+                "Available aliases: `fetchusers`, `getusers`, `findbyrole`";
     }
 
 

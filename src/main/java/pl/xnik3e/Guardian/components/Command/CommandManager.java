@@ -6,9 +6,7 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
-import pl.xnik3e.Guardian.components.Command.Commands.FetchUsersWithRole;
-import pl.xnik3e.Guardian.components.Command.Commands.Init;
-import pl.xnik3e.Guardian.components.Command.Commands.TestCommand;
+import pl.xnik3e.Guardian.components.Command.Commands.*;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -25,9 +23,10 @@ public class CommandManager {
     @Autowired
     public CommandManager(MessageUtils messageUtils){
         this.messageUtils = messageUtils;
-        addCommand(new TestCommand());
-        addCommand(new FetchUsersWithRole(messageUtils));
-        addCommand(new Init(messageUtils));
+        addCommand(new FetchUsersWithRoleCommand(messageUtils));
+        addCommand(new InitCommand(messageUtils));
+        addCommand(new TogglePrefixCommand(messageUtils));
+        addCommand(new ToggleMentionCommand(messageUtils));
     }
 
     private void addCommand(ICommand cmd) {
@@ -79,6 +78,9 @@ public class CommandManager {
         boolean a = cmd.isAfterInit();
         boolean b = messageUtils.getFireStoreService().getModel().isInit();
 
-        return (a && b) || (!a && !b);
+        //bot is init and command require init return true
+        //bot is not init and command require init return false
+        //command not require init return true
+        return !a || b;
     }
 }
