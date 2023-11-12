@@ -1,5 +1,7 @@
 package pl.xnik3e.Guardian.components.Command.Commands;
 
+import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.MessageEmbed;
 import pl.xnik3e.Guardian.Services.FireStoreService;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
 import pl.xnik3e.Guardian.components.Command.CommandContext;
@@ -32,8 +34,14 @@ public class ToggleMentionCommand implements ICommand {
     }
 
     @Override
-    public String getHelp() {
-        return "Set bot to respond by mention";
+    public MessageEmbed getHelp() {
+        EmbedBuilder eBuilder = new EmbedBuilder();
+        eBuilder.setTitle("Toggle mention");
+        eBuilder.setDescription("Set bot to respond by mention\n");
+        eBuilder.addField("Usage", "{prefix} togglemention", false);
+        eBuilder.addField("Example usage", fireStoreService.getModel().getPrefix() + "togglemention", false);
+        eBuilder.addField("Available aliases", "mention, m, setmention, changemention", false);
+        return eBuilder.build();
     }
 
     @Override

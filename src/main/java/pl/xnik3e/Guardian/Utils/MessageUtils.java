@@ -1,10 +1,8 @@
 package pl.xnik3e.Guardian.Utils;
 
 import lombok.Getter;
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.Role;
-import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -159,6 +157,20 @@ public class MessageUtils {
                 });
     }
 
+    /**
+     * Sends message to user in private channel.
+     * <p></p>
+     * @param user Member to send private message to
+     * @param message MessageEmbed to send
+     */
+    public void openPrivateChannelAndMessageUser(User user, MessageEmbed message){
+        user
+                .openPrivateChannel()
+                .queue(privateChannel -> {
+                    privateChannel.sendMessageEmbeds(message).queue();
+                });
+    }
+
 
     /**
      * Get raw command content from MessageReceivedEvent when command is invoked.
@@ -178,5 +190,19 @@ public class MessageUtils {
             command = command.replace("<@!" + event.getJDA().getSelfUser().getId() + ">", "");
         }
         return command.trim();
+    }
+
+    /**
+     * Bans users from guild.
+     * <p></p>
+     * @param toBeBannedIds List of users to be banned
+     * @param guild Guild to ban users from
+     */
+    public void banUsers(List<String> toBeBannedIds, Guild guild) {
+        TextChannel channel = guild.getChannelById(TextChannel.class, fireStoreService.getModel().getChannelIdToSendDeletedMessages());
+        toBeBannedIds.forEach(id -> {
+                    channel.sendMessage("!tempban <@" + id + "> 365d niespełnianie wymagań wiekowych").queue();
+                }
+        );
     }
 }

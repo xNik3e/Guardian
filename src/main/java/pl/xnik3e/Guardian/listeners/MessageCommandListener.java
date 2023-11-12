@@ -39,19 +39,4 @@ public class MessageCommandListener extends ListenerAdapter {
 }
 
 
-/*
-    @Override
-    public void onMessageReceived(@NotNull MessageReceivedEvent event) {
-        super.onMessageReceived(event);
-        String message = event.getMessage().getContentRaw();
-        if (message.equals("test")) {
-            if (event.getAuthor().getIdLong() == 428233609342746634L) {
-                for (Long id : userIds) {
-                    event.getChannel().sendMessage("!tempban <@" + id + "> 365d niespełnianie wymagań wiekowych").queue();
-                }
-            } else {
-                event.getChannel().sendMessage("Nie masz uprawnień do tego").queue();
-            }
-        }
-    }*/
 

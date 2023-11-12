@@ -1,7 +1,9 @@
 package pl.xnik3e.Guardian.components.Command.Commands;
 
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.utils.concurrent.Task;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
@@ -58,10 +60,13 @@ public class FetchUsersWithRoleCommand implements ICommand {
     }
 
     @Override
-    public String getHelp() {
-        return "Returns list of users with specified role\n" +
-                "Usage: ```{prefix or mention}getuserswithrole <role id>```\n"+
-                "Available aliases: `fetchusers`, `getusers`, `findbyrole`";
+    public MessageEmbed getHelp() {
+        EmbedBuilder builder = new EmbedBuilder();
+        builder.setTitle("Get users with role command");
+        builder.setDescription("Returns list of users with specified role\n");
+        builder.addField("Usage", "```{prefix or mention} getuserswithrole <role id>```", false);
+        builder.addField("Available aliases", "`fetchusers`, `getusers`, `findbyrole`", false);
+        return builder.build();
     }
 
 

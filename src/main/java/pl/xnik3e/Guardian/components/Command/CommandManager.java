@@ -27,6 +27,8 @@ public class CommandManager {
         addCommand(new InitCommand(messageUtils));
         addCommand(new TogglePrefixCommand(messageUtils));
         addCommand(new ToggleMentionCommand(messageUtils));
+        addCommand(new BanUsersWithRoleCommand(messageUtils));
+        addCommand(new HelpCommand(this, messageUtils));
     }
 
     private void addCommand(ICommand cmd) {

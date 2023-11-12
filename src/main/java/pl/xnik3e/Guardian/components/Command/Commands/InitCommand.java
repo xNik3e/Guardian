@@ -1,6 +1,8 @@
 package pl.xnik3e.Guardian.components.Command.Commands;
 
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.channel.Channel;
 import pl.xnik3e.Guardian.Models.ConfigModel;
 import pl.xnik3e.Guardian.Services.FireStoreService;
@@ -90,8 +92,14 @@ public class InitCommand implements ICommand {
     }
 
     @Override
-    public String getHelp() {
-        return null;
+    public MessageEmbed getHelp() {
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setTitle("Init command");
+        embedBuilder.setDescription("Required to initialize the bot\nYou need to be in desired channel to set it as ban or log channel");
+        embedBuilder.addField("Optional arguments", "`ban`, `log`", false);
+        embedBuilder.addField("Usage", "```{prefix or mention} init {optional <ban or log>}```", false);
+        embedBuilder.addField("Available aliases", "`i`, `setup`", false);
+        return embedBuilder.build();
     }
 
     @Override
