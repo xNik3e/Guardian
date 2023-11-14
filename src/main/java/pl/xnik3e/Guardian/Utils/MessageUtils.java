@@ -4,6 +4,7 @@ import lombok.Getter;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -176,6 +177,20 @@ public class MessageUtils {
     }
 
     /**
+     * Sends message to user in private channel.
+     * <p></p>
+     * @param user Member to send private message to
+     * @param message MessageCreateData to send
+     */
+    public void openPrivateChannelAndMessageUser(User user, MessageCreateData message){
+        user
+                .openPrivateChannel()
+                .queue(privateChannel -> {
+                    privateChannel.sendMessage(message).queue();
+                });
+    }
+
+    /**
      * Sends message to user in private channel or in channel where command was invoked.
      * <p></p>
      * @param ctx CommandContext to get member from
@@ -200,6 +215,20 @@ public class MessageUtils {
             openPrivateChannelAndMessageUser(ctx.getMember().getUser(), message);
         } else {
             ctx.getMessage().replyEmbeds(message).queue();
+        }
+    }
+
+    /**
+     * Sends message to user in private channel or in channel where command was invoked.
+     * <p></p>
+     * @param ctx CommandContext to get member from
+     * @param message MessageCreateData to send
+     */
+    public void respondToUser(CommandContext ctx, MessageCreateData message){
+        if (configModel.isRespondInDirectMessage()) {
+            openPrivateChannelAndMessageUser(ctx.getMember().getUser(), message);
+        } else {
+            ctx.getMessage().reply(message).queue();
         }
     }
 

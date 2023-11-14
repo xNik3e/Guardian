@@ -1,6 +1,7 @@
 package pl.xnik3e.Guardian.components.Command;
 
 import lombok.Getter;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,7 +9,9 @@ import org.springframework.stereotype.Component;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
 import pl.xnik3e.Guardian.components.Command.Commands.*;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -30,6 +33,7 @@ public class CommandManager {
         addCommand(new BanUsersWithRoleCommand(messageUtils));
         addCommand(new HelpCommand(this, messageUtils));
         addCommand(new ToggleBotResponse(messageUtils));
+        addCommand(new ResetCommand(messageUtils));
     }
 
     private void addCommand(ICommand cmd) {
@@ -62,8 +66,12 @@ public class CommandManager {
         ICommand cmd = this.getCommand(invoke);
 
         if(cmd == null){
-            User user = event.getAuthor();
-            messageUtils.openPrivateChannelAndMessageUser(user, "Wrong command");
+            EmbedBuilder embedBuilder = new EmbedBuilder();
+            embedBuilder.setTitle("Command not found");
+            embedBuilder.setDescription("Use `" + messageUtils.getFireStoreService().getModel().getPrefix() + "help` to see all available commands");
+            embedBuilder.setColor(Color.RED);
+            messageUtils.respondToUser(new CommandContext(event, List.of("")), embedBuilder.build());
+            return;
         }
 
         if (checkInit(cmd)) {
@@ -73,11 +81,15 @@ public class CommandManager {
         }else{
             User user = event.getAuthor();
             event.getMessage().delete().queue();
-            messageUtils.openPrivateChannelAndMessageUser(user, "You should run the *init* command first");
+            EmbedBuilder embedBuilder = new EmbedBuilder();
+            embedBuilder.setTitle("Bot not initialized");
+            embedBuilder.setDescription("You should run the *init* command first");
+            embedBuilder.setColor(Color.RED);
+            messageUtils.respondToUser(new CommandContext(event, List.of("")), embedBuilder.build());
         }
     }
 
-    public boolean checkInit(ICommand cmd){
+    public boolean checkInit(@Nonnull ICommand cmd){
         boolean a = cmd.isAfterInit();
         boolean b = messageUtils.getFireStoreService().getModel().isInit();
 
