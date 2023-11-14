@@ -12,11 +12,11 @@ import pl.xnik3e.Guardian.Models.ConfigModel;
 import java.util.ArrayList;
 import java.util.List;
 
+@Getter
 @Service
 public class FireStoreService {
 
     private final Firestore firestore;
-    @Getter
     private final ConfigModel model;
     private final List<String> userIds = new ArrayList<>();
 
@@ -92,7 +92,7 @@ public class FireStoreService {
         thread.start();
     }
 
-    private void updateConfigModel() {
+    public void updateConfigModel() {
         ApiFuture<WriteResult> future = firestore.collection("config").document("config").set(model);
         if (future.isDone()) {
             System.out.println("Updated config");

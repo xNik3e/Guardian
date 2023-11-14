@@ -11,20 +11,24 @@ public class ConfigModel {
     private boolean isInit;
     private boolean afterStartupInit;
     private boolean respondByPrefix;
+    private boolean respondInDirectMessage;
+    private boolean deleteTriggerMessage;
     private String prefix = "";
     private List<String> excludedRoleIds;
     private List<String> excludedChannelIds;
     private List<String> excludedUserIds;
     private List<String> rolesToDelete;
 
+
+
     private String channelIdToSendLog;
     private String channelIdToSendDeletedMessages;
 
     public ConfigModel() {
-        this.excludedChannelIds = new ArrayList<>();
-        this.excludedRoleIds = new ArrayList<>();
-        this.excludedUserIds = new ArrayList<>();
-        this.rolesToDelete = new ArrayList<>();
+        this.excludedChannelIds = new ArrayList<>(); //Channels to exclude from operating
+        this.excludedRoleIds = new ArrayList<>(); //Roles that have granted special privileges
+        this.excludedUserIds = new ArrayList<>(); //Users that have granted special privileges
+        this.rolesToDelete = new ArrayList<>(); //Included user roles that will result in member being banned
         getDefaultConfig();
     }
 
@@ -32,11 +36,17 @@ public class ConfigModel {
         this.isInit = model.isInit;
         this.afterStartupInit = model.afterStartupInit;
         this.respondByPrefix = model.respondByPrefix;
+        this.respondInDirectMessage = model.respondInDirectMessage;
+        this.deleteTriggerMessage = model.deleteTriggerMessage;
         this.prefix = model.prefix;
-        this.excludedRoleIds.clear();
-        this.excludedChannelIds.clear();
 
+        this.channelIdToSendLog = model.channelIdToSendLog;
+        this.channelIdToSendDeletedMessages = model.channelIdToSendDeletedMessages;
+
+        this.excludedRoleIds.clear();
         this.excludedRoleIds.addAll(model.excludedRoleIds);
+
+        this.excludedChannelIds.clear();
         this.excludedChannelIds.addAll(model.excludedChannelIds);
 
         this.excludedUserIds.clear();
@@ -50,9 +60,11 @@ public class ConfigModel {
         this.isInit = false;
         this.afterStartupInit = false;
         this.respondByPrefix = true;
+        this.respondInDirectMessage = true;
+        this.deleteTriggerMessage = true;
         this.prefix = "&";
-        this.channelIdToSendLog = "1123245083798552657"; //TODO: TEMP CHANGE LATER
-        this.channelIdToSendDeletedMessages = "1123245083798552657"; //TODO: TEMP CHANGE LATER
+        this.channelIdToSendLog = ""; //TODO: TEMP CHANGE LATER
+        this.channelIdToSendDeletedMessages = ""; //TODO: TEMP CHANGE LATER
 
 
         this.excludedChannelIds.clear();
@@ -62,9 +74,9 @@ public class ConfigModel {
         this.rolesToDelete.add("1164645019769131029"); //<16
 
         //excluded roles
-        this.excludedUserIds.add("372811196627156993"); //Moderator
-        this.excludedUserIds.add("672490701769932801"); //Pomocnik Administracji
-        this.excludedUserIds.add("379296005385879553"); //Administrator
-        this.excludedUserIds.add("451069025607352320"); //PIO
+        this.excludedRoleIds.add("372811196627156993"); //Moderator
+        this.excludedRoleIds.add("672490701769932801"); //Pomocnik Administracji
+        this.excludedRoleIds.add("379296005385879553"); //Administrator
+        this.excludedRoleIds.add("451069025607352320"); //PIO
     }
 }
