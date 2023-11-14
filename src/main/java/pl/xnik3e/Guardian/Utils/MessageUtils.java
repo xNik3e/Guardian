@@ -7,7 +7,9 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import pl.xnik3e.Guardian.Models.ConfigModel;
 import pl.xnik3e.Guardian.Services.FireStoreService;
+import pl.xnik3e.Guardian.components.Command.CommandContext;
 
 import java.util.List;
 
@@ -16,10 +18,12 @@ import java.util.List;
 public class MessageUtils {
 
     private final FireStoreService fireStoreService;
+    private final ConfigModel configModel;
 
     @Autowired
     public MessageUtils(FireStoreService fireStoreService) {
         this.fireStoreService = fireStoreService;
+        this.configModel = fireStoreService.getModel();
     }
 
     /**
@@ -64,7 +68,7 @@ public class MessageUtils {
      * @return true if member has any role included in rolesToDelete list, false otherwise
      */
     private boolean performRolesToDeleteCheck(List<String> userRoles) {
-        List<String> rolesToDelete = fireStoreService.getModel()
+        List<String> rolesToDelete = configModel
                 .getRolesToDelete();
         return userRoles.stream().anyMatch(rolesToDelete::contains);
     }
@@ -78,7 +82,7 @@ public class MessageUtils {
      * @return true if member has any role included in excludedRoleIds list, false otherwise
      */
     private boolean performRolesToExcludeCheck(List<String> userRoles) {
-        List<String> excludedRoles = fireStoreService.getModel()
+        List<String> excludedRoles = configModel
                 .getExcludedRoleIds();
         return userRoles.stream().anyMatch(excludedRoles::contains);
     }
@@ -92,7 +96,7 @@ public class MessageUtils {
      */
     private boolean checkAuthority(Member member) {
         List<String> memberRoles = getMemberRoleList(member);
-        return performRolesToExcludeCheck(memberRoles) || fireStoreService.getModel()
+        return performRolesToExcludeCheck(memberRoles) || configModel
                 .getExcludedUserIds()
                 .contains(member.getId());
     }
@@ -105,7 +109,7 @@ public class MessageUtils {
      * @return true if message should be processed by bot, false otherwise
      */
     public boolean checkTrigger(MessageReceivedEvent event) {
-        boolean respondByPrefix = fireStoreService.getModel()
+        boolean respondByPrefix = configModel
                 .isRespondByPrefix();
 
         if (respondByPrefix) {
@@ -135,7 +139,7 @@ public class MessageUtils {
      * @return true if message starts with prefix, false otherwise
      */
     private boolean checkPrefix(MessageReceivedEvent event) {
-        String prefix = fireStoreService.getModel()
+        String prefix = configModel
                 .getPrefix();
         return event
                 .getMessage()
@@ -171,6 +175,34 @@ public class MessageUtils {
                 });
     }
 
+    /**
+     * Sends message to user in private channel or in channel where command was invoked.
+     * <p></p>
+     * @param ctx CommandContext to get member from
+     * @param message Message to send
+     */
+    public void respondToUser(CommandContext ctx, String message){
+        if(configModel.isRespondInDirectMessage()){
+            openPrivateChannelAndMessageUser(ctx.getMember().getUser(), message);
+        }else{
+            ctx.getChannel().sendMessage(message).queue();
+        }
+    }
+
+    /**
+     * Sends message to user in private channel or in channel where command was invoked.
+     * <p></p>
+     * @param ctx CommandContext to get member from
+     * @param message MessageEmbed to send
+     */
+    public void respondToUser(CommandContext ctx, MessageEmbed message) {
+        if (configModel.isRespondInDirectMessage()) {
+            openPrivateChannelAndMessageUser(ctx.getMember().getUser(), message);
+        } else {
+            ctx.getChannel().sendMessageEmbeds(message).queue();
+        }
+    }
+
 
     /**
      * Get raw command content from MessageReceivedEvent when command is invoked.
@@ -187,7 +219,7 @@ public class MessageUtils {
             command = command.replace(prefix, "");
         }else{
             //delete bot mention
-            command = command.replace("<@!" + event.getJDA().getSelfUser().getId() + ">", "");
+            command = command.replace("<@" + event.getJDA().getSelfUser().getId() + ">", "");
         }
         return command.trim();
     }

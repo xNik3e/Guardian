@@ -7,6 +7,7 @@ import pl.xnik3e.Guardian.Utils.MessageUtils;
 import pl.xnik3e.Guardian.components.Command.CommandContext;
 import pl.xnik3e.Guardian.components.Command.ICommand;
 
+import java.awt.*;
 import java.util.List;
 
 public class TogglePrefixCommand implements ICommand {
@@ -24,15 +25,20 @@ public class TogglePrefixCommand implements ICommand {
         ctx.getMessage().delete().queue();
         fireStoreService.getModel().setRespondByPrefix(true);
         List<String> args = ctx.getArgs();
-        if(!args.isEmpty()){
+        EmbedBuilder eBuilder = new EmbedBuilder();
+        eBuilder.setTitle("Respond by prefix");
+        if (!args.isEmpty()) {
             String prefix = args.get(0);
+            eBuilder.setTitle("Prefix changed");
             fireStoreService.getModel().setPrefix(prefix);
         }
 
         fireStoreService.updateConfigModel();
-        messageUtils.openPrivateChannelAndMessageUser(ctx.getMember().getUser(),
-                "Bot is now responding by: **prefix**\n" +
-                        "Current value for prefix: "+ "`" + fireStoreService.getModel().getPrefix() + "`");
+
+        eBuilder.setDescription("Bot is now responding by: **prefix**\n" +
+                "Current value for prefix: " + "`" + fireStoreService.getModel().getPrefix() + "`");
+
+        messageUtils.respondToUser(ctx, eBuilder.build());
 
     }
 
@@ -44,12 +50,24 @@ public class TogglePrefixCommand implements ICommand {
     @Override
     public MessageEmbed getHelp() {
         EmbedBuilder eBuilder = new EmbedBuilder();
-        eBuilder.setTitle("Toggle prefix");
-        eBuilder.setDescription("Set bot to respond by prefix\n");
-        eBuilder.addField("Usage", "{prefix} toggleprefix {optional <prefix>}", false);
-        eBuilder.addField("Example usage", fireStoreService.getModel().getPrefix() + "toggleprefix !", false);
-        eBuilder.addField("Available aliases", "prefix, p, setprefix, changeprefix", false);
+        eBuilder.setTitle(getTitle());
+        eBuilder.setDescription(getDescription());
+        eBuilder.addField("Usage", "`{prefix} toggleprefix {optional <prefix>}`", false);
+        eBuilder.addField("Example usage", "`" + fireStoreService.getModel().getPrefix() + "toggleprefix !`", false);
+        eBuilder.addField("Available aliases", "`prefix`, `p`, `setprefix`, `changeprefix`", false);
+        Color color = new Color((int) (Math.random() * 0x1000000));
+        eBuilder.setColor(color);
         return eBuilder.build();
+    }
+
+    @Override
+    public String getDescription() {
+        return "Set bot to respond by prefix";
+    }
+
+    @Override
+    public String getTitle() {
+        return "Toggle prefix";
     }
 
     @Override

@@ -7,6 +7,7 @@ import pl.xnik3e.Guardian.Utils.MessageUtils;
 import pl.xnik3e.Guardian.components.Command.CommandContext;
 import pl.xnik3e.Guardian.components.Command.ICommand;
 
+import java.awt.*;
 import java.util.List;
 
 public class ToggleMentionCommand implements ICommand {
@@ -24,8 +25,10 @@ public class ToggleMentionCommand implements ICommand {
         ctx.getMessage().delete().queue();
         fireStoreService.getModel().setRespondByPrefix(false);
         fireStoreService.updateConfigModel();
-        messageUtils.openPrivateChannelAndMessageUser(ctx.getMember().getUser(),
-                "Bot is now responding by: **mention**");
+        EmbedBuilder eBuilder = new EmbedBuilder();
+        eBuilder.setTitle("Respond by mention");
+        eBuilder.setDescription("Bot is now responding by: **mention**");
+        messageUtils.respondToUser(ctx, eBuilder.build());
     }
 
     @Override
@@ -36,12 +39,24 @@ public class ToggleMentionCommand implements ICommand {
     @Override
     public MessageEmbed getHelp() {
         EmbedBuilder eBuilder = new EmbedBuilder();
-        eBuilder.setTitle("Toggle mention");
-        eBuilder.setDescription("Set bot to respond by mention\n");
-        eBuilder.addField("Usage", "{prefix} togglemention", false);
-        eBuilder.addField("Example usage", fireStoreService.getModel().getPrefix() + "togglemention", false);
-        eBuilder.addField("Available aliases", "mention, m, setmention, changemention", false);
+        eBuilder.setTitle(getTitle());
+        eBuilder.setDescription(getDescription());
+        eBuilder.addField("Usage", "`{prefix} togglemention`", false);
+        eBuilder.addField("Example usage", "`" +fireStoreService.getModel().getPrefix() + "togglemention`", false);
+        eBuilder.addField("Available aliases", "`mention`, `m`, `setmention`, `changemention`", false);
+        Color color = new Color((int)(Math.random() * 0x1000000));
+        eBuilder.setColor(color);
         return eBuilder.build();
+    }
+
+    @Override
+    public String getDescription() {
+        return "Set bot to respond by mention";
+    }
+
+    @Override
+    public String getTitle() {
+        return "Toggle mention";
     }
 
     @Override

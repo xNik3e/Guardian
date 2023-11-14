@@ -11,6 +11,7 @@ public class ConfigModel {
     private boolean isInit;
     private boolean afterStartupInit;
     private boolean respondByPrefix;
+    private boolean respondInDirectMessage;
     private String prefix = "";
     private List<String> excludedRoleIds;
     private List<String> excludedChannelIds;
@@ -32,7 +33,11 @@ public class ConfigModel {
         this.isInit = model.isInit;
         this.afterStartupInit = model.afterStartupInit;
         this.respondByPrefix = model.respondByPrefix;
+        this.respondInDirectMessage = model.respondInDirectMessage;
         this.prefix = model.prefix;
+
+        this.channelIdToSendLog = model.channelIdToSendLog;
+        this.channelIdToSendDeletedMessages = model.channelIdToSendDeletedMessages;
 
         this.excludedRoleIds.clear();
         this.excludedRoleIds.addAll(model.excludedRoleIds);
@@ -51,6 +56,7 @@ public class ConfigModel {
         this.isInit = false;
         this.afterStartupInit = false;
         this.respondByPrefix = true;
+        this.respondInDirectMessage = true;
         this.prefix = "&";
         this.channelIdToSendLog = ""; //TODO: TEMP CHANGE LATER
         this.channelIdToSendDeletedMessages = ""; //TODO: TEMP CHANGE LATER

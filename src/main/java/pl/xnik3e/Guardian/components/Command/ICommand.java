@@ -7,6 +7,8 @@ public interface ICommand {
     void handle(CommandContext ctx);
     String getName();
     MessageEmbed getHelp();
+    String getDescription();
+    String getTitle();
     default boolean isAfterInit(){return true;}
 
     default List<String> getAliases(){
