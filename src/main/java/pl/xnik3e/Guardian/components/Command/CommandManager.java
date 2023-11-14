@@ -32,8 +32,9 @@ public class CommandManager {
         addCommand(new ToggleMentionCommand(messageUtils));
         addCommand(new BanUsersWithRoleCommand(messageUtils));
         addCommand(new HelpCommand(this, messageUtils));
-        addCommand(new ToggleBotResponse(messageUtils));
+        addCommand(new ToggleBotResponseCommand(messageUtils));
         addCommand(new ResetCommand(messageUtils));
+        addCommand(new DeleteTriggerCommand(messageUtils));
     }
 
     private void addCommand(ICommand cmd) {

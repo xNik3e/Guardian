@@ -10,19 +10,21 @@ import pl.xnik3e.Guardian.components.Command.ICommand;
 import java.awt.*;
 import java.util.List;
 
-public class ToggleBotResponse implements ICommand {
+public class ToggleBotResponseCommand implements ICommand {
 
     private final MessageUtils messageUtils;
     private final FireStoreService firestoreService;
 
-    public ToggleBotResponse(MessageUtils messageUtils) {
+    public ToggleBotResponseCommand(MessageUtils messageUtils) {
         this.messageUtils = messageUtils;
         this.firestoreService = messageUtils.getFireStoreService();
     }
 
     @Override
     public void handle(CommandContext ctx) {
-        ctx.getMessage().delete().queue();
+        boolean deleteTriggerMessage = firestoreService.getModel().isDeleteTriggerMessage();
+        if(deleteTriggerMessage)
+            ctx.getMessage().delete().queue();
         EmbedBuilder embedBuilder = new EmbedBuilder();
         boolean respondInDirect = !firestoreService.getModel().isRespondInDirectMessage();
         firestoreService.getModel().setRespondInDirectMessage(respondInDirect);

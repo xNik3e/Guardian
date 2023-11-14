@@ -27,7 +27,9 @@ public class InitCommand implements ICommand {
 
     @Override
     public void handle(CommandContext ctx) {
-        ctx.getMessage().delete().queue();
+        boolean deleteTriggerMessage = fireStoreService.getModel().isDeleteTriggerMessage();
+        if(deleteTriggerMessage)
+            ctx.getMessage().delete().queue();
         Guild guild = ctx.getGuild();
         Channel channel = ctx.getChannel();
         List<String> args = ctx.getArgs();

@@ -22,7 +22,9 @@ public class HelpCommand implements ICommand {
 
     @Override
     public void handle(CommandContext ctx) {
-        ctx.getMessage().delete().queue();
+        boolean deleteTriggerMessage = messageUtils.getFireStoreService().getModel().isDeleteTriggerMessage();
+        if(deleteTriggerMessage)
+            ctx.getMessage().delete().queue();
         List<String> args = ctx.getArgs();
         if (args.isEmpty()) {
             EmbedBuilder builder = new EmbedBuilder();

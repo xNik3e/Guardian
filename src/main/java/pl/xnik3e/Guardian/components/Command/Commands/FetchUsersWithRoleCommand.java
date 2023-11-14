@@ -25,7 +25,9 @@ public class FetchUsersWithRoleCommand implements ICommand {
 
     @Override
     public void handle(CommandContext ctx) {
-        ctx.getMessage().delete().queue();
+        boolean deleteTriggerMessage = messageUtils.getFireStoreService().getModel().isDeleteTriggerMessage();
+        if(deleteTriggerMessage)
+            ctx.getMessage().delete().queue();
         Guild guild = ctx.getGuild();
         List<String> args = ctx.getArgs();
         EmbedBuilder eBuilder = new EmbedBuilder();

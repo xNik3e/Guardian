@@ -29,7 +29,9 @@ public class BanUsersWithRoleCommand implements ICommand {
 
     @Override
     public void handle(CommandContext ctx) {
-        ctx.getMessage().delete().queue();
+        boolean deleteTriggerMessage = fireStoreService.getModel().isDeleteTriggerMessage();
+        if(deleteTriggerMessage)
+            ctx.getMessage().delete().queue();
         Guild guild = ctx.getGuild();
         List<String> args = ctx.getArgs();
         EmbedBuilder eBuilder = new EmbedBuilder();

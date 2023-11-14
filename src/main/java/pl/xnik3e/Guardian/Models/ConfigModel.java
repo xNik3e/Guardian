@@ -12,11 +12,14 @@ public class ConfigModel {
     private boolean afterStartupInit;
     private boolean respondByPrefix;
     private boolean respondInDirectMessage;
+    private boolean deleteTriggerMessage;
     private String prefix = "";
     private List<String> excludedRoleIds;
     private List<String> excludedChannelIds;
     private List<String> excludedUserIds;
     private List<String> rolesToDelete;
+
+
 
     private String channelIdToSendLog;
     private String channelIdToSendDeletedMessages;
@@ -34,6 +37,7 @@ public class ConfigModel {
         this.afterStartupInit = model.afterStartupInit;
         this.respondByPrefix = model.respondByPrefix;
         this.respondInDirectMessage = model.respondInDirectMessage;
+        this.deleteTriggerMessage = model.deleteTriggerMessage;
         this.prefix = model.prefix;
 
         this.channelIdToSendLog = model.channelIdToSendLog;
@@ -57,6 +61,7 @@ public class ConfigModel {
         this.afterStartupInit = false;
         this.respondByPrefix = true;
         this.respondInDirectMessage = true;
+        this.deleteTriggerMessage = true;
         this.prefix = "&";
         this.channelIdToSendLog = ""; //TODO: TEMP CHANGE LATER
         this.channelIdToSendDeletedMessages = ""; //TODO: TEMP CHANGE LATER

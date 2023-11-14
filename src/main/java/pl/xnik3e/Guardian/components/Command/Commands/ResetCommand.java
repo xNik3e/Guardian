@@ -24,7 +24,9 @@ public class ResetCommand implements ICommand {
 
     @Override
     public void handle(CommandContext ctx) {
-        ctx.getMessage().delete().queue();
+        boolean deleteTriggerMessage = fireStoreService.getModel().isDeleteTriggerMessage();
+        if(deleteTriggerMessage)
+            ctx.getMessage().delete().queue();
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setTitle("Hello there!");
         embedBuilder.setDescription("You're about to reset the bot to factory settings. Are you sure?");
