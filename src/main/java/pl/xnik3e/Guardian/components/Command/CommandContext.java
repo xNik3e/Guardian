@@ -15,6 +15,4 @@ public class CommandContext implements ICommandContext {
         this.event = event;
         this.args = args;
     }
-
-
 }

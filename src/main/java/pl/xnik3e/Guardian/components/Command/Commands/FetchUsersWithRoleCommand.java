@@ -51,6 +51,7 @@ public class FetchUsersWithRoleCommand implements ICommand {
             }
             Task<List<Member>> task = guild.findMembersWithRoles(role);
             task.onSuccess(members -> {
+                eBuilder.setTitle("Fetching complete");
                 eBuilder.setDescription("Users with role: " + role.getName());
                 members.forEach(member -> {
                     eBuilder.addField(member.getUser().getName(), member.getUser().getId(), true);

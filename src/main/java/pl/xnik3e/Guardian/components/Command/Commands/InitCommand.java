@@ -88,15 +88,15 @@ public class InitCommand implements ICommand {
             StringBuilder banMessage = new StringBuilder();
             banMessage.append("In order to set up a ban command, go to desired channel").append(
                    model.isRespondByPrefix() ?
-                            " and type " +model.getPrefix() + "init ban" :
-                            ", mention me and type init ban"
+                            " and type *" +model.getPrefix() + "init ban*" :
+                            ", mention me and type *init ban*"
             ).append("\nBan command is **required**.");
             embedBuilder.addField("Ban command", banMessage.toString(), false);
             StringBuilder logMessage = new StringBuilder();
             logMessage.append("In order to set up a log command, go to desired channel").append(
                     model.isRespondByPrefix() ?
-                            " and type " + model.getPrefix() + "init log" :
-                            ", mention me and type init log"
+                            " and type *" + model.getPrefix() + "init log*" :
+                            ", mention me and type *init log*"
             ).append("\nLog command is **optional**.");
             embedBuilder.addField("Log command", logMessage.toString(), false);
             embedBuilder.addField("Aliases", "You can always use a command aliases listed in help command", false);

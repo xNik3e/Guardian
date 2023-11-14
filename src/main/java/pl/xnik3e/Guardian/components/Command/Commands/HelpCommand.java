@@ -40,7 +40,7 @@ public class HelpCommand implements ICommand {
                                         alias -> aliases.append(alias).append(" ")
                                 );
                         builder.addField(it.getName(),
-                                it.getDescription() + "\n"
+                                "*" +it.getDescription() + "*\n"
                                         + "Aliases: " + aliases.toString(), false);
                     });
             messageUtils.respondToUser(ctx, builder.build());

@@ -185,7 +185,7 @@ public class MessageUtils {
         if(configModel.isRespondInDirectMessage()){
             openPrivateChannelAndMessageUser(ctx.getMember().getUser(), message);
         }else{
-            ctx.getChannel().sendMessage(message).queue();
+            ctx.getMessage().reply(message).queue();
         }
     }
 
@@ -199,7 +199,7 @@ public class MessageUtils {
         if (configModel.isRespondInDirectMessage()) {
             openPrivateChannelAndMessageUser(ctx.getMember().getUser(), message);
         } else {
-            ctx.getChannel().sendMessageEmbeds(message).queue();
+            ctx.getMessage().replyEmbeds(message).queue();
         }
     }
 
