@@ -24,13 +24,22 @@ public class SlashCommandInteractionListener extends ListenerAdapter {
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
         event.deferReply().setEphemeral(true).queue();
         String commandName = event.getName();
+        StringBuilder command = new StringBuilder();
         switch(commandName){
             case "help":
-                StringBuilder command = new StringBuilder();
                 command.append("help");
-                Optional<OptionMapping> option = Optional.ofNullable(event.getOption("command"));
-                if(option.isPresent()){
-                    String argument = option.get().getAsString();
+                Optional<OptionMapping> optionHelp = Optional.ofNullable(event.getOption("command"));
+                if(optionHelp.isPresent()){
+                    String argument = optionHelp.get().getAsString();
+                    command.append(" ").append(argument);
+                }
+                manager.handle(event, command.toString());
+                break;
+            case "init":
+                command.append("init");
+                Optional<OptionMapping> optionInit = Optional.ofNullable(event.getOption("option"));
+                if(optionInit.isPresent()){
+                    String argument = optionInit.get().getAsString();
                     command.append(" ").append(argument);
                 }
                 manager.handle(event, command.toString());
