@@ -2,6 +2,8 @@ package pl.xnik3e.Guardian.components.Command.Commands;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import org.jetbrains.annotations.NotNull;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
 import pl.xnik3e.Guardian.components.Command.CommandContext;
 import pl.xnik3e.Guardian.components.Command.CommandManager;
@@ -27,38 +29,36 @@ public class HelpCommand implements ICommand {
             ctx.getMessage().delete().queue();
         List<String> args = ctx.getArgs();
         if (args.isEmpty()) {
-            EmbedBuilder builder = new EmbedBuilder();
-            builder.setTitle("Commands");
-            Color color = new Color((int) (Math.random() * 0x1000000));
-            builder.setColor(color);
-
-            commandManager.getCommands().stream()
-                    .forEach((it) -> {
-                        StringBuilder aliases = new StringBuilder();
-                        it.getAliases()
-                                .stream()
-                                .map((alias) -> "`" + alias + "`")
-                                .forEachOrdered(
-                                        alias -> aliases.append(alias).append(" ")
-                                );
-                        builder.addField(it.getName(),
-                                "*" +it.getDescription() + "*\n"
-                                        + "Aliases: " + aliases.toString(), false);
-                    });
+            EmbedBuilder builder = getCommandsEmbedBuilder();
             messageUtils.respondToUser(ctx, builder.build());
             return;
         }
         String search = args.get(0);
         ICommand command = commandManager.getCommand(search);
         if (command == null) {
-            EmbedBuilder builder = new EmbedBuilder();
-            builder.setTitle("Command not found");
-            builder.setDescription("Command `" + search + "` not found");
-            builder.setColor(Color.RED);
+            EmbedBuilder builder = getNotFoundEmbedBuilder(search);
             messageUtils.respondToUser(ctx, builder.build());
             return;
         }
         messageUtils.respondToUser(ctx, command.getHelp());
+    }
+
+
+    @Override
+    public void handleSlash(SlashCommandInteractionEvent event, List<String> args) {
+        if(args.isEmpty()){
+            EmbedBuilder builder = getCommandsEmbedBuilder();
+            event.replyEmbeds(builder.build()).setEphemeral(true).queue();
+            return;
+        }
+        String search = args.get(0);
+        ICommand command = commandManager.getCommand(search);
+        if(command == null){
+            EmbedBuilder builder = getCommandsEmbedBuilder();
+            event.replyEmbeds(builder.build()).setEphemeral(true).queue();
+            return;
+        }
+        event.replyEmbeds(command.getHelp()).setEphemeral(true).queue();
     }
 
     @Override
@@ -96,5 +96,37 @@ public class HelpCommand implements ICommand {
     @Override
     public List<String> getAliases() {
         return List.of("h");
+    }
+
+    @NotNull
+    private EmbedBuilder getCommandsEmbedBuilder() {
+        EmbedBuilder builder = new EmbedBuilder();
+        builder.setTitle("Commands");
+        Color color = new Color((int) (Math.random() * 0x1000000));
+        builder.setColor(color);
+
+        commandManager.getCommands().stream()
+                .forEach((it) -> {
+                    StringBuilder aliases = new StringBuilder();
+                    it.getAliases()
+                            .stream()
+                            .map((alias) -> "`" + alias + "`")
+                            .forEachOrdered(
+                                    alias -> aliases.append(alias).append(" ")
+                            );
+                    builder.addField(it.getName(),
+                            "*" +it.getDescription() + "*\n"
+                                    + "Aliases: " + aliases.toString(), false);
+                });
+        return builder;
+    }
+
+    @NotNull
+    private static EmbedBuilder getNotFoundEmbedBuilder(String search) {
+        EmbedBuilder builder = new EmbedBuilder();
+        builder.setTitle("Command not found");
+        builder.setDescription("Command `" + search + "` not found");
+        builder.setColor(Color.RED);
+        return builder;
     }
 }
