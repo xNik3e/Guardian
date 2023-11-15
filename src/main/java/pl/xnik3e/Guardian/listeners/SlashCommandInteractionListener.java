@@ -25,11 +25,11 @@ public class SlashCommandInteractionListener extends ListenerAdapter {
         event.deferReply().setEphemeral(true).queue();
         String commandName = event.getName();
         StringBuilder command = new StringBuilder();
-        switch(commandName){
+        switch (commandName) {
             case "help":
                 command.append("help");
                 Optional<OptionMapping> optionHelp = Optional.ofNullable(event.getOption("command"));
-                if(optionHelp.isPresent()){
+                if (optionHelp.isPresent()) {
                     String argument = optionHelp.get().getAsString();
                     command.append(" ").append(argument);
                 }
@@ -38,7 +38,7 @@ public class SlashCommandInteractionListener extends ListenerAdapter {
             case "init":
                 command.append("init");
                 Optional<OptionMapping> optionInit = Optional.ofNullable(event.getOption("option"));
-                if(optionInit.isPresent()){
+                if (optionInit.isPresent()) {
                     String argument = optionInit.get().getAsString();
                     command.append(" ").append(argument);
                 }
@@ -47,13 +47,17 @@ public class SlashCommandInteractionListener extends ListenerAdapter {
             case "prefix":
                 command.append("prefix");
                 Optional<OptionMapping> optionPrefix = Optional.ofNullable(event.getOption("prefix"));
-                if(optionPrefix.isPresent()){
+                if (optionPrefix.isPresent()) {
                     String argument = optionPrefix.get().getAsString();
                     command.append(" ").append(argument);
                 }
                 manager.handle(event, command.toString());
                 break;
-                default:
+            case "mention":
+                command.append("mention");
+                manager.handle(event, command.toString());
+                break;
+            default:
                 event.getHook().sendMessage("Command not found").setEphemeral(true).queue();
 
         }
