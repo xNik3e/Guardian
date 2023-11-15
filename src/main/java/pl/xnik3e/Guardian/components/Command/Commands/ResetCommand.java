@@ -2,6 +2,7 @@ package pl.xnik3e.Guardian.components.Command.Commands;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
@@ -37,6 +38,11 @@ public class ResetCommand implements ICommand {
         messageUtils.respondToUser(ctx, message);
 
 
+
+    }
+
+    @Override
+    public void handleSlash(SlashCommandInteractionEvent event, List<String> args) {
 
     }
 

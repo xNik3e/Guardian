@@ -2,6 +2,7 @@ package pl.xnik3e.Guardian.components.Command.Commands;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import pl.xnik3e.Guardian.Services.FireStoreService;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
 import pl.xnik3e.Guardian.components.Command.CommandContext;
@@ -33,6 +34,11 @@ public class ToggleBotResponseCommand implements ICommand {
         embedBuilder.setDescription("I will now respond back to you by: **" + (respondInDirect ? "direct message" : "message reply") + "**");
         embedBuilder.setColor(Color.GREEN);
         messageUtils.respondToUser(ctx, embedBuilder.build());
+    }
+
+    @Override
+    public void handleSlash(SlashCommandInteractionEvent event, List<String> args) {
+
     }
 
     @Override

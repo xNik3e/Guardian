@@ -2,6 +2,7 @@ package pl.xnik3e.Guardian.components.Command.Commands;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import pl.xnik3e.Guardian.Services.FireStoreService;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
 import pl.xnik3e.Guardian.components.Command.CommandContext;
@@ -31,6 +32,11 @@ public class ToggleMentionCommand implements ICommand {
         eBuilder.setTitle("Respond by mention");
         eBuilder.setDescription("Bot is now responding by: **mention**");
         messageUtils.respondToUser(ctx, eBuilder.build());
+    }
+
+    @Override
+    public void handleSlash(SlashCommandInteractionEvent event, List<String> args) {
+
     }
 
     @Override

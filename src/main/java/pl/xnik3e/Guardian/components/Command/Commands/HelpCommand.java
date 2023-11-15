@@ -48,17 +48,17 @@ public class HelpCommand implements ICommand {
     public void handleSlash(SlashCommandInteractionEvent event, List<String> args) {
         if(args.isEmpty()){
             EmbedBuilder builder = getCommandsEmbedBuilder();
-            event.replyEmbeds(builder.build()).setEphemeral(true).queue();
+            event.getHook().sendMessageEmbeds(builder.build()).setEphemeral(true).queue();
             return;
         }
         String search = args.get(0);
         ICommand command = commandManager.getCommand(search);
         if(command == null){
             EmbedBuilder builder = getCommandsEmbedBuilder();
-            event.replyEmbeds(builder.build()).setEphemeral(true).queue();
+            event.getHook().sendMessageEmbeds(builder.build()).setEphemeral(true).queue();
             return;
         }
-        event.replyEmbeds(command.getHelp()).setEphemeral(true).queue();
+        event.getHook().sendMessageEmbeds(command.getHelp()).setEphemeral(true).queue();
     }
 
     @Override

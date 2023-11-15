@@ -4,21 +4,25 @@ import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEve
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import pl.xnik3e.Guardian.components.Command.CommandManager;
 
 import java.util.Optional;
 
+@Component
 public class SlashCommandInteractionListener extends ListenerAdapter {
 
     private final CommandManager manager;
 
+    @Autowired
     public SlashCommandInteractionListener(CommandManager manager) {
         this.manager = manager;
     }
 
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
-        event.deferReply().queue();
+        event.deferReply().setEphemeral(true).queue();
         String commandName = event.getName();
         switch(commandName){
             case "help":
@@ -32,7 +36,7 @@ public class SlashCommandInteractionListener extends ListenerAdapter {
                 manager.handle(event, command.toString());
                 break;
             default:
-                event.reply("Command not found").setEphemeral(true).queue();
+                event.getHook().sendMessage("Command not found").setEphemeral(true).queue();
 
         }
     }

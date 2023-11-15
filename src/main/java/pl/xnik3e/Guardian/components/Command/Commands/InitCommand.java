@@ -4,6 +4,7 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.channel.Channel;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import pl.xnik3e.Guardian.Models.ConfigModel;
 import pl.xnik3e.Guardian.Services.FireStoreService;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
@@ -105,6 +106,11 @@ public class InitCommand implements ICommand {
             embedBuilder.setColor((int)(Math.random() * 0x1000000));
             messageUtils.respondToUser(ctx, embedBuilder.build());
         }
+    }
+
+    @Override
+    public void handleSlash(SlashCommandInteractionEvent event, List<String> args) {
+
     }
 
     @Override
