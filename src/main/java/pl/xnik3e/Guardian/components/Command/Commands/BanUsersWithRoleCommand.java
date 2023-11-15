@@ -35,44 +35,20 @@ public class BanUsersWithRoleCommand implements ICommand {
             ctx.getMessage().delete().queue();
         Guild guild = ctx.getGuild();
         List<String> args = ctx.getArgs();
-        EmbedBuilder eBuilder = new EmbedBuilder();
-        if (!args.isEmpty()) {
-            //regular expression to check whether role was mentioned or not
-            Matcher matcher = Pattern.compile("\\d+")
-                    .matcher(args.get(0));
-            eBuilder.setTitle("An error occurred");
-            eBuilder.setDescription("Please provide valid role id or mention");
-            eBuilder.setColor(Color.RED);
+        purgeUsers(ctx, null, args, guild);
 
-            if (!matcher.find()) {
-                messageUtils.respondToUser(ctx, eBuilder.build());
-                return;
-            }
-            String roleId = matcher.group(0);
-            Role role = guild.getRoleById(roleId);
-            if (role == null) {
-                messageUtils.respondToUser(ctx, eBuilder.build());
-                return;
-            }
-            Task<List<Member>> task = guild.findMembersWithRoles(role);
+    }
 
-            task.onSuccess(members -> {
-                List<String> toBeBannedIds = new ArrayList<>();
-                members.forEach(member -> toBeBannedIds.add(member.getUser().getId()));
-                messageUtils.banUsers(toBeBannedIds, guild);
-            });
-        }else{
-            eBuilder.setTitle("Empty argument");
-            eBuilder.setDescription("Please provide valid role id or mention");
-            eBuilder.setColor(Color.RED);
+    private void respondToUser(CommandContext ctx, SlashCommandInteractionEvent event, EmbedBuilder eBuilder) {
+        if(ctx != null)
             messageUtils.respondToUser(ctx, eBuilder.build());
-        }
-
+        else
+            event.getHook().sendMessageEmbeds(eBuilder.build()).setEphemeral(true).queue();
     }
 
     @Override
     public void handleSlash(SlashCommandInteractionEvent event, List<String> args) {
-
+        purgeUsers(null, event, args, event.getGuild());
     }
 
     @Override
@@ -117,5 +93,40 @@ public class BanUsersWithRoleCommand implements ICommand {
     @Override
     public List<String> getAliases() {
         return List.of("banusers", "banbyrole", "purge", "banall", "banrole");
+    }
+
+    private void purgeUsers(CommandContext ctx, SlashCommandInteractionEvent event, List<String> args, Guild guild) {
+        EmbedBuilder eBuilder = new EmbedBuilder();
+        if (!args.isEmpty()) {
+            //regular expression to check whether role was mentioned or not
+            Matcher matcher = Pattern.compile("\\d+")
+                    .matcher(args.get(0));
+            eBuilder.setTitle("An error occurred");
+            eBuilder.setDescription("Please provide valid role id or mention");
+            eBuilder.setColor(Color.RED);
+
+            if (!matcher.find()) {
+                respondToUser(ctx, event, eBuilder);
+                return;
+            }
+            String roleId = matcher.group(0);
+            Role role = guild.getRoleById(roleId);
+            if (role == null) {
+                respondToUser(ctx, event, eBuilder);
+                return;
+            }
+            Task<List<Member>> task = guild.findMembersWithRoles(role);
+
+            task.onSuccess(members -> {
+                List<String> toBeBannedIds = new ArrayList<>();
+                members.forEach(member -> toBeBannedIds.add(member.getUser().getId()));
+                messageUtils.banUsers(toBeBannedIds, guild);
+            });
+        }else{
+            eBuilder.setTitle("Empty argument");
+            eBuilder.setDescription("Please provide valid role id or mention");
+            eBuilder.setColor(Color.RED);
+            respondToUser(ctx, event, eBuilder);
+        }
     }
 }

@@ -66,6 +66,15 @@ public class SlashCommandInteractionListener extends ListenerAdapter {
                 }
                 manager.handle(event, command.toString());
                 break;
+            case "purge":
+                command.append("purge");
+                Optional<OptionMapping> optionPurge = Optional.ofNullable(event.getOption("role"));
+                if (optionPurge.isPresent()) {
+                    String argument = optionPurge.get().getAsRole().getId();
+                    command.append(" ").append(argument);
+                }
+                manager.handle(event, command.toString());
+                break;
             default:
                 event.getHook().sendMessage("Command not found").setEphemeral(true).queue();
 
