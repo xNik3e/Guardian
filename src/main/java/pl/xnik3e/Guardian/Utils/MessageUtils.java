@@ -266,4 +266,23 @@ public class MessageUtils {
                 }
         );
     }
+
+    /**
+     * Checks if member should be excluded from bot actions.
+     * <p></p>
+     * @param member Member to check
+     * @return true if member should be excluded from bot actions, false otherwise
+     */
+    public boolean performMemberCheck(Member member) {
+        List<String> excludedRoles = fireStoreService.getModel().getExcludedRoleIds();
+        List<String> excludedMembers = fireStoreService.getModel().getExcludedUserIds();
+
+        if (member.getUser().isBot())
+            return true;
+        if (member.getRoles().stream()
+                .map(Role::getId)
+                .anyMatch(excludedRoles::contains))
+            return true;
+        return excludedMembers.contains(member.getUser().getId());
+    }
 }

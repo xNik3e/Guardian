@@ -7,6 +7,7 @@ import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.utils.concurrent.Task;
+import pl.xnik3e.Guardian.Services.FireStoreService;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
 import pl.xnik3e.Guardian.components.Command.CommandContext;
 import pl.xnik3e.Guardian.components.Command.ICommand;
@@ -21,9 +22,11 @@ import java.util.regex.Pattern;
 public class FetchUsersWithRoleCommand implements ICommand {
 
     private final MessageUtils messageUtils;
+    private final FireStoreService fireStoreService;
 
     public FetchUsersWithRoleCommand(MessageUtils messageUtils) {
         this.messageUtils = messageUtils;
+        this.fireStoreService = messageUtils.getFireStoreService();
     }
 
     @Override
@@ -100,6 +103,7 @@ public class FetchUsersWithRoleCommand implements ICommand {
                 eBuilder.setTitle("Fetching complete");
                 eBuilder.setDescription("Users with role: " + role.getName());
                 members.forEach(member -> {
+                    if(messageUtils.performMemberCheck(member)) return;
                     eBuilder.addField(member.getUser().getName(), member.getUser().getId(), true);
                 });
                 eBuilder.setColor(Color.GREEN);
@@ -111,6 +115,8 @@ public class FetchUsersWithRoleCommand implements ICommand {
             respondToUser(ctx, event, eBuilder);
         }
     }
+
+
 
     private void respondToUser(@Nullable CommandContext ctx, @Nullable SlashCommandInteractionEvent event, EmbedBuilder eBuilder) {
         if(ctx != null)

@@ -104,7 +104,7 @@ public class BanUsersWithRoleCommand implements ICommand {
             }
             String roleId = matcher.group(0);
             Role role = guild.getRoleById(roleId);
-            if (role == null) {
+            if (role == null || role.isPublicRole()) {
                 respondToUser(ctx, event, eBuilder);
                 return;
             }
@@ -112,7 +112,17 @@ public class BanUsersWithRoleCommand implements ICommand {
 
             task.onSuccess(members -> {
                 List<String> toBeBannedIds = new ArrayList<>();
-                members.forEach(member -> toBeBannedIds.add(member.getUser().getId()));
+                members.forEach(member -> {
+                    if (messageUtils.performMemberCheck(member)) return;
+                    toBeBannedIds.add(member.getUser().getId());
+                });
+                if(event != null)
+                    event.getHook().sendMessageEmbeds(
+                            eBuilder.setTitle("Banning users")
+                                    .setDescription("Banning users with role: **" + role.getName() + "**")
+                                    .setColor(Color.GREEN)
+                                    .build()
+                    ).setEphemeral(true).queue();
                 messageUtils.banUsers(toBeBannedIds, guild);
             });
         }else{
@@ -122,6 +132,7 @@ public class BanUsersWithRoleCommand implements ICommand {
             respondToUser(ctx, event, eBuilder);
         }
     }
+
 
     private void respondToUser(CommandContext ctx, SlashCommandInteractionEvent event, EmbedBuilder eBuilder) {
         if(ctx != null)

@@ -78,5 +78,9 @@ public class ConfigModel {
         this.excludedRoleIds.add("672490701769932801"); //Pomocnik Administracji
         this.excludedRoleIds.add("379296005385879553"); //Administrator
         this.excludedRoleIds.add("451069025607352320"); //PIO
+        this.excludedRoleIds.add("1174464585391157410"); //TODO: TEMP ROLE FOR DEBUGGING
+
+        //excluded users
+        this.excludedUserIds.add("428233609342746634"); //TODO: DEBUGGING
     }
 }

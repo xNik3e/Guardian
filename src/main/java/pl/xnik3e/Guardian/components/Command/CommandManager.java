@@ -114,7 +114,7 @@ public class CommandManager {
             embedBuilder.setTitle("Bot not initialized");
             embedBuilder.setDescription("You should run the *init* command first");
             embedBuilder.setColor(Color.RED);
-            event.replyEmbeds(embedBuilder.build()).setEphemeral(true).queue();
+            event.getHook().sendMessageEmbeds(embedBuilder.build()).setEphemeral(true).queue();
         }
     }
 
