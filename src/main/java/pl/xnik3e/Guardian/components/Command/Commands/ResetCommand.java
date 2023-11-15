@@ -6,6 +6,7 @@ import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEve
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
+import org.jetbrains.annotations.NotNull;
 import pl.xnik3e.Guardian.Services.FireStoreService;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
 import pl.xnik3e.Guardian.components.Command.CommandContext;
@@ -28,18 +29,14 @@ public class ResetCommand implements ICommand {
         boolean deleteTriggerMessage = fireStoreService.getModel().isDeleteTriggerMessage();
         if(deleteTriggerMessage)
             ctx.getMessage().delete().queue();
-        EmbedBuilder embedBuilder = new EmbedBuilder();
-        embedBuilder.setTitle("Hello there!");
-        embedBuilder.setDescription("You're about to reset the bot to factory settings. Are you sure?");
-        embedBuilder.addField("Warning", "This action is **irreversible!**", false);
-        Button button = Button.danger("reset", "Reset");
-        MessageCreateData message = new MessageCreateBuilder().setEmbeds(embedBuilder.build()).setActionRow(button).build();
+        MessageCreateData message = getMessageCreateData();
         messageUtils.respondToUser(ctx, message);
     }
 
     @Override
     public void handleSlash(SlashCommandInteractionEvent event, List<String> args) {
-
+        MessageCreateData message = getMessageCreateData();
+        event.getHook().sendMessage(message).setEphemeral(true).queue();
     }
 
     @Override
@@ -76,5 +73,15 @@ public class ResetCommand implements ICommand {
     @Override
     public List<String> getAliases() {
         return List.of("resetbot", "usedefaults", "factoryreset", "rollback", "r");
+    }
+
+    @NotNull
+    private static MessageCreateData getMessageCreateData() {
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setTitle("Hello there!");
+        embedBuilder.setDescription("You're about to reset the bot to factory settings. Are you sure?");
+        embedBuilder.addField("Warning", "This action is **irreversible!**", false);
+        Button button = Button.danger("reset", "Reset");
+        return new MessageCreateBuilder().setEmbeds(embedBuilder.build()).setActionRow(button).build();
     }
 }

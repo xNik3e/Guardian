@@ -83,6 +83,10 @@ public class SlashCommandInteractionListener extends ListenerAdapter {
                 command.append("dt");
                 manager.handle(event, command.toString());
                 break;
+            case "reset":
+                command.append("reset");
+                manager.handle(event, command.toString());
+                break;
             default:
                 event.getHook().sendMessage("Command not found").setEphemeral(true).queue();
 
