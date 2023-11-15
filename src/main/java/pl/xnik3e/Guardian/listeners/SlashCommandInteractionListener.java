@@ -57,6 +57,15 @@ public class SlashCommandInteractionListener extends ListenerAdapter {
                 command.append("mention");
                 manager.handle(event, command.toString());
                 break;
+            case "fetch":
+                command.append("fetch");
+                Optional<OptionMapping> optionFetch = Optional.ofNullable(event.getOption("role"));
+                if (optionFetch.isPresent()) {
+                    String argument = optionFetch.get().getAsRole().getId();
+                    command.append(" ").append(argument);
+                }
+                manager.handle(event, command.toString());
+                break;
             default:
                 event.getHook().sendMessage("Command not found").setEphemeral(true).queue();
 
