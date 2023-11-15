@@ -60,7 +60,7 @@ public class CommandManager {
         return null;
     }
 
-    public void handle(MessageReceivedEvent event) {
+    public void handle(MessageReceivedEvent event, boolean isSlash) {
         String[] split = messageUtils.rawCommandContent(event)
                 .split("\\s+");
         String invoke = split[0].toLowerCase();
@@ -71,13 +71,13 @@ public class CommandManager {
             embedBuilder.setTitle("Command not found");
             embedBuilder.setDescription("Use `" + messageUtils.getFireStoreService().getModel().getPrefix() + "help` to see all available commands");
             embedBuilder.setColor(Color.RED);
-            messageUtils.respondToUser(new CommandContext(event, List.of("")), embedBuilder.build());
+            messageUtils.respondToUser(new CommandContext(event, List.of(""), isSlash), embedBuilder.build());
             return;
         }
 
         if (checkInit(cmd)) {
             List<String> args = Arrays.asList(split).subList(1, split.length);
-            CommandContext ctx = new CommandContext(event, args);
+            CommandContext ctx = new CommandContext(event, args, isSlash);
             cmd.handle(ctx);
         }else{
             User user = event.getAuthor();
@@ -86,7 +86,7 @@ public class CommandManager {
             embedBuilder.setTitle("Bot not initialized");
             embedBuilder.setDescription("You should run the *init* command first");
             embedBuilder.setColor(Color.RED);
-            messageUtils.respondToUser(new CommandContext(event, List.of("")), embedBuilder.build());
+            messageUtils.respondToUser(new CommandContext(event, List.of(""), isSlash), embedBuilder.build());
         }
     }
 

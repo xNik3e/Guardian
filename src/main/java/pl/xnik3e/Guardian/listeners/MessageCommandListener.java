@@ -36,7 +36,7 @@ public class MessageCommandListener extends ListenerAdapter {
         }
 
         if (messageUtils.checkTrigger(event)) {
-            commandManager.handle(event);
+            commandManager.handle(event, false);
         }
     }
 
