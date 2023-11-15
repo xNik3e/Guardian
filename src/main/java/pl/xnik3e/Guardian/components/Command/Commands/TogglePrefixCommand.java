@@ -3,6 +3,7 @@ package pl.xnik3e.Guardian.components.Command.Commands;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import org.jetbrains.annotations.NotNull;
 import pl.xnik3e.Guardian.Services.FireStoreService;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
 import pl.xnik3e.Guardian.components.Command.CommandContext;
@@ -26,28 +27,15 @@ public class TogglePrefixCommand implements ICommand {
         boolean deleteTriggerMessage = fireStoreService.getModel().isDeleteTriggerMessage();
         if(deleteTriggerMessage)
             ctx.getMessage().delete().queue();
-        fireStoreService.getModel().setRespondByPrefix(true);
         List<String> args = ctx.getArgs();
-        EmbedBuilder eBuilder = new EmbedBuilder();
-        eBuilder.setTitle("Respond by prefix");
-        if (!args.isEmpty()) {
-            String prefix = args.get(0);
-            eBuilder.setTitle("Prefix changed");
-            fireStoreService.getModel().setPrefix(prefix);
-        }
-
-        fireStoreService.updateConfigModel();
-
-        eBuilder.setDescription("Bot is now responding by: **prefix**\n" +
-                "Current value for prefix: " + "`" + fireStoreService.getModel().getPrefix() + "`");
-
+        EmbedBuilder eBuilder = getEmbedBuilder(args);
         messageUtils.respondToUser(ctx, eBuilder.build());
-
     }
 
     @Override
     public void handleSlash(SlashCommandInteractionEvent event, List<String> args) {
-
+        EmbedBuilder eBuilder = getEmbedBuilder(args);
+        event.getHook().sendMessageEmbeds(eBuilder.build()).setEphemeral(true).queue();
     }
 
     @Override
@@ -86,5 +74,21 @@ public class TogglePrefixCommand implements ICommand {
     @Override
     public List<String> getAliases() {
         return List.of("prefix", "p", "setprefix", "changeprefix");
+    }
+
+    @NotNull
+    private EmbedBuilder getEmbedBuilder(List<String> args) {
+        fireStoreService.getModel().setRespondByPrefix(true);
+        EmbedBuilder eBuilder = new EmbedBuilder();
+        eBuilder.setTitle("Respond by prefix");
+        if (!args.isEmpty()) {
+            String prefix = args.get(0);
+            eBuilder.setTitle("Prefix changed");
+            fireStoreService.getModel().setPrefix(prefix);
+        }
+        fireStoreService.updateConfigModel();
+        eBuilder.setDescription("Bot is now responding by: **prefix**\n" +
+                "Current value for prefix: " + "`" + fireStoreService.getModel().getPrefix() + "`");
+        return eBuilder;
     }
 }

@@ -44,7 +44,16 @@ public class SlashCommandInteractionListener extends ListenerAdapter {
                 }
                 manager.handle(event, command.toString());
                 break;
-            default:
+            case "prefix":
+                command.append("prefix");
+                Optional<OptionMapping> optionPrefix = Optional.ofNullable(event.getOption("prefix"));
+                if(optionPrefix.isPresent()){
+                    String argument = optionPrefix.get().getAsString();
+                    command.append(" ").append(argument);
+                }
+                manager.handle(event, command.toString());
+                break;
+                default:
                 event.getHook().sendMessage("Command not found").setEphemeral(true).queue();
 
         }
