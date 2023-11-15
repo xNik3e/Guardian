@@ -79,6 +79,10 @@ public class SlashCommandInteractionListener extends ListenerAdapter {
                 command.append("tbr");
                 manager.handle(event, command.toString());
                 break;
+            case "dt":
+                command.append("dt");
+                manager.handle(event, command.toString());
+                break;
             default:
                 event.getHook().sendMessage("Command not found").setEphemeral(true).queue();
 

@@ -39,13 +39,6 @@ public class BanUsersWithRoleCommand implements ICommand {
 
     }
 
-    private void respondToUser(CommandContext ctx, SlashCommandInteractionEvent event, EmbedBuilder eBuilder) {
-        if(ctx != null)
-            messageUtils.respondToUser(ctx, eBuilder.build());
-        else
-            event.getHook().sendMessageEmbeds(eBuilder.build()).setEphemeral(true).queue();
-    }
-
     @Override
     public void handleSlash(SlashCommandInteractionEvent event, List<String> args) {
         purgeUsers(null, event, args, event.getGuild());
@@ -128,5 +121,12 @@ public class BanUsersWithRoleCommand implements ICommand {
             eBuilder.setColor(Color.RED);
             respondToUser(ctx, event, eBuilder);
         }
+    }
+
+    private void respondToUser(CommandContext ctx, SlashCommandInteractionEvent event, EmbedBuilder eBuilder) {
+        if(ctx != null)
+            messageUtils.respondToUser(ctx, eBuilder.build());
+        else
+            event.getHook().sendMessageEmbeds(eBuilder.build()).setEphemeral(true).queue();
     }
 }

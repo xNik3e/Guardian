@@ -33,12 +33,8 @@ public class ResetCommand implements ICommand {
         embedBuilder.setDescription("You're about to reset the bot to factory settings. Are you sure?");
         embedBuilder.addField("Warning", "This action is **irreversible!**", false);
         Button button = Button.danger("reset", "Reset");
-
         MessageCreateData message = new MessageCreateBuilder().setEmbeds(embedBuilder.build()).setActionRow(button).build();
         messageUtils.respondToUser(ctx, message);
-
-
-
     }
 
     @Override
