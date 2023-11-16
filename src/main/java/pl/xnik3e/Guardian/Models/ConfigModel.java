@@ -22,6 +22,7 @@ public class ConfigModel {
 
 
     private String channelIdToSendLog;
+    private String channelIdToSendEchoLog;
     private String channelIdToSendDeletedMessages;
 
     public ConfigModel() {
@@ -41,6 +42,7 @@ public class ConfigModel {
         this.prefix = model.prefix;
 
         this.channelIdToSendLog = model.channelIdToSendLog;
+        this.channelIdToSendEchoLog = model.channelIdToSendEchoLog;
         this.channelIdToSendDeletedMessages = model.channelIdToSendDeletedMessages;
 
         this.excludedRoleIds.clear();
@@ -65,6 +67,7 @@ public class ConfigModel {
         this.prefix = "&";
         this.channelIdToSendLog = ""; //TODO: TEMP CHANGE LATER
         this.channelIdToSendDeletedMessages = ""; //TODO: TEMP CHANGE LATER
+        this.channelIdToSendEchoLog = ""; //TODO: TEMP CHANGE LATER
 
 
         this.excludedChannelIds.clear();

@@ -54,8 +54,8 @@ public class InitCommand implements ICommand {
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setTitle(getTitle());
         embedBuilder.setDescription(getDescription());
-        embedBuilder.addField("Optional arguments", "`ban`, `log`", false);
-        embedBuilder.addField("Usage", "`{prefix or mention} init {optional <ban or log>}`", false);
+        embedBuilder.addField("Optional arguments", "`ban`, `log`, 'echolog'", false);
+        embedBuilder.addField("Usage", "`{prefix or mention} init {optional <ban, log or echolog>}`", false);
         embedBuilder.addField("Available aliases", "`i`, `setup`", false);
         Color color = new Color((int)(Math.random() * 0x1000000));
         embedBuilder.setColor(color);
@@ -126,6 +126,24 @@ public class InitCommand implements ICommand {
                     }
                     fireStoreService.updateConfigModel();
                     break;
+                case "echolog":
+                    String previousEchoLogChannel = model.getChannelIdToSendEchoLog();
+                    model.setChannelIdToSendEchoLog(channel.getId());
+                    if(previousEchoLogChannel.isEmpty()){
+                        embedBuilder.setTitle("Echo Log channel set");
+                        embedBuilder.setDescription("Setting up the echo log utility for channel: **"
+                                + channel.getName() +"**");
+                        embedBuilder.setColor(Color.GREEN);
+                        replyToUser(ctx, event, embedBuilder);
+                    }else{
+                        embedBuilder.setTitle("Echo Log channel changed");
+                        embedBuilder.setDescription("Setting up the echo log utility for channel: **"
+                                + channel.getName() + "**"
+                                + "\nPrevious channel was: **" + guild.getChannelById(Channel.class, previousEchoLogChannel).getName() +"**");
+                        embedBuilder.setColor(Color.GREEN);
+                    }
+                    fireStoreService.updateConfigModel();
+                    break;
                 default:
                     embedBuilder.setTitle("Error");
                     embedBuilder.setDescription("Invalid argument");
@@ -151,6 +169,13 @@ public class InitCommand implements ICommand {
                             ", mention me and type *init log*"
             ).append("\nLog command is **optional**.");
             embedBuilder.addField("Log command", logMessage.toString(), false);
+            StringBuilder echoLogMessage = new StringBuilder();
+            echoLogMessage.append("In order to set up a log command, go to desired channel").append(
+                    model.isRespondByPrefix() ?
+                            " and type *" + model.getPrefix() + "init log*" :
+                            ", mention me and type *init log*"
+            ).append("\nLog command is **optional**.");
+            embedBuilder.addField("Echo log command", echoLogMessage.toString(), false);
             embedBuilder.addField("Aliases", "You can always use a command aliases listed in help command", false);
             embedBuilder.setColor((int)(Math.random() * 0x1000000));
             replyToUser(ctx, event, embedBuilder);

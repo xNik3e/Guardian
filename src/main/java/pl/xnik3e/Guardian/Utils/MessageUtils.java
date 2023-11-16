@@ -2,7 +2,6 @@ package pl.xnik3e.Guardian.Utils;
 
 import lombok.Getter;
 import net.dv8tion.jda.api.entities.*;
-import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
@@ -271,8 +270,10 @@ public class MessageUtils {
      * @param guild         Guild to ban users from
      */
     public void banUsers(List<String> toBeBannedIds, Guild guild) {
-        TextChannel channel = guild.getChannelById(TextChannel.class, fireStoreService.getModel().getChannelIdToSendDeletedMessages());
+        MessageChannel channel = guild.getChannelById(MessageChannel.class, fireStoreService.getModel().getChannelIdToSendDeletedMessages());
         MessageChannel logChannel = guild.getChannelById(MessageChannel.class, fireStoreService.getModel().getChannelIdToSendLog());
+        MessageChannel echoChannel = guild.getChannelById(MessageChannel.class, fireStoreService.getModel().getChannelIdToSendEchoLog());
+
         toBeBannedIds.forEach(id -> {
                     Member member = guild.getMemberById(id);
                     channel.sendMessage("!tempban <@" + id + "> 365d niespełnianie wymagań wiekowych").queue();
@@ -288,6 +289,8 @@ public class MessageUtils {
                             .append(" - ").append("niespełnianie wymagań wiekowych");
                     if (logChannel != null)
                         logChannel.sendMessage(sb.toString()).queue();
+                    if(echoChannel != null)
+                        echoChannel.sendMessage(sb.toString()).queue();
                 }
         );
     }

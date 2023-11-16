@@ -29,6 +29,7 @@ public class SlashCommandManager {
                                 new OptionData(OptionType.STRING, "option", "Option", false)
                                         .addChoice("Ban", "ban")
                                         .addChoice("Log", "log")
+                                        .addChoice("Echo log", "echolog")
                         ),
                 Commands.slash("prefix", "Toggle prefix")
                         .addOptions(
@@ -38,7 +39,7 @@ public class SlashCommandManager {
                 Commands.slash("fetch", "Get users with role")
                         .addOption(OptionType.ROLE, "role", "Role to fetch", true),
                 Commands.slash("purge", "Ban users with role")
-                        .addOption(OptionType.ROLE, "role", "Role to ban", true),
+                        .addOption(OptionType.ROLE, "role", "Role to ban", false),
                 Commands.slash("tbr", "Toggle bot response"),
                 Commands.slash("dt", "Delete message trigger"),
                 Commands.slash("reset", "Reset bot")
