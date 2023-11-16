@@ -286,7 +286,7 @@ public class MessageUtils {
 
         toBeBannedIds.forEach(id -> {
                     Member member = guild.getMemberById(id);
-                    tempBanUser(member.getUser(), channel, guild, 1, TimeUnit.DAYS, "Niespełnianie wymagań wiekowych");
+                    tempBanUser(member.getUser(), channel, guild, 365, TimeUnit.DAYS, "Niespełnianie wymagań wiekowych");
 
                     StringBuilder sb = new StringBuilder();
                     sb

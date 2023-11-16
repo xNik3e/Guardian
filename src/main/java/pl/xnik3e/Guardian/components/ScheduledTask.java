@@ -1,18 +1,27 @@
 package pl.xnik3e.Guardian.components;
 
+import io.github.cdimascio.dotenv.Dotenv;
 import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.UserSnowflake;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import pl.xnik3e.Guardian.GuardianDiscordBot;
+import pl.xnik3e.Guardian.Models.TempBanModel;
 import pl.xnik3e.Guardian.Services.FireStoreService;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
 
+import java.util.List;
 @Component
 public class ScheduledTask {
 
     private final FireStoreService fireStoreService;
     private final MessageUtils messageUtils;
     private final JDA jda;
+    private final Dotenv config;
 
 
     @Autowired
@@ -20,6 +29,7 @@ public class ScheduledTask {
         this.messageUtils = messageUtils;
         this.fireStoreService = messageUtils.getFireStoreService();
         this.jda = bot.getJda();
+        this.config = Dotenv.configure().load();
     }
 
 
@@ -38,6 +48,22 @@ public class ScheduledTask {
         }
     }*/
 
+    //scheduled every 1 minute
+    @Scheduled(fixedRate = 60 * 1000)
+    public void unbanUsers(){
+        Guild guild = jda.getGuildById(config.get("GUILD_ID"));
+        Thread thread = new Thread(() -> {
+            List<TempBanModel> tempBanModels = fireStoreService.queryBans();
+            tempBanModels.forEach(model -> {
+                guild.unban(UserSnowflake.fromId(model.getUserId())).queue();
+                fireStoreService.deleteBanModel(model.getMessageId());
+                MessageChannel logChannel = guild.getChannelById(MessageChannel.class, fireStoreService.getModel().getChannelIdToSendDeletedMessages());
+                Message message = logChannel.retrieveMessageById(model.getMessageId()).complete();
+                message.delete().queue();
+            });
+        });
+        thread.start();
+    }
 
 
 

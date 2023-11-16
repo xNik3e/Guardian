@@ -3,6 +3,7 @@ package pl.xnik3e.Guardian.Services;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.firestore.WriteResult;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -135,6 +136,24 @@ public class FireStoreService {
         ApiFuture<WriteResult> future = firestore.collection("tempbans").document(messageId).delete();
         if(future.isDone()){
             System.out.println("Deleted tempban model");
+        }
+    }
+
+
+    public List<TempBanModel> queryBans(){
+        long now = System.currentTimeMillis();
+        List<TempBanModel> tempBanModels = new ArrayList<>();
+        ApiFuture<QuerySnapshot> future = firestore.collection("tempbans").whereLessThan("banTime", now).get();
+        try{
+            future.get(10, TimeUnit.SECONDS).getDocuments().forEach(document -> {
+                TempBanModel tempBanModel = document.toObject(TempBanModel.class);
+                if(tempBanModel != null){
+                    tempBanModels.add(tempBanModel);
+                }
+            });
+            return tempBanModels;
+        }catch (Exception e){
+            return null;
         }
     }
 

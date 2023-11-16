@@ -5,6 +5,7 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.UserSnowflake;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -72,6 +73,10 @@ public class MessageCommandListener extends ListenerAdapter {
                         event.getGuild().unban(UserSnowflake.fromId(tempBanModel.getUserId())).queue(s -> {
                             message.delete().queue();
                             fireStoreService.deleteBanModel(messageId);
+                            MessageChannel logChannel = event.getGuild().getChannelById(MessageChannel.class, fireStoreService.getModel().getChannelIdToSendLog());
+                            if(logChannel != null){
+                                logChannel.sendMessage("User " + tempBanModel.getUserId() + " has been unbanned").queue();
+                            }
                         }, f -> {
                             messageUtils.openPrivateChannelAndMessageUser(event.getUser(), "Something went wrong");
                         });
