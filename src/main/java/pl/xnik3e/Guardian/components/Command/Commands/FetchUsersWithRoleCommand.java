@@ -104,7 +104,8 @@ public class FetchUsersWithRoleCommand implements ICommand {
                 eBuilder.setDescription("Users with role: " + role.getName());
                 members.forEach(member -> {
                     if(messageUtils.performMemberCheck(member)) return;
-                    eBuilder.addField(member.getUser().getName(), member.getUser().getId(), true);
+                    eBuilder.addField(member.getUser().getName(), member.getUser().getId() + "\n" + member.getUser().getAsMention(), true);
+
                 });
                 eBuilder.setColor(Color.GREEN);
                 respondToUser(ctx, event, eBuilder);

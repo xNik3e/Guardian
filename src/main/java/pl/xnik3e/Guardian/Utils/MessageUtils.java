@@ -3,6 +3,7 @@ package pl.xnik3e.Guardian.Utils;
 import lombok.Getter;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 import org.jetbrains.annotations.NotNull;
@@ -122,6 +123,7 @@ public class MessageUtils {
     /**
      * Checks if bot was mentioned in message.
      * <p></p>
+     *
      * @param event MessageReceivedEvent to check
      * @return true if bot was mentioned in message, false otherwise
      */
@@ -136,6 +138,7 @@ public class MessageUtils {
     /**
      * Checks if message starts with prefix.
      * <p></p>
+     *
      * @param event MessageReceivedEvent to check
      * @return true if message starts with prefix, false otherwise
      */
@@ -151,11 +154,12 @@ public class MessageUtils {
     /**
      * Sends message to user in private channel.
      * <p></p>
-     * @param user Member to send private message to
+     *
+     * @param user    Member to send private message to
      * @param message Message to send
      */
     public void openPrivateChannelAndMessageUser(User user, String message) {
-       user
+        user
                 .openPrivateChannel()
                 .queue(privateChannel -> {
                     privateChannel.sendMessage(message).queue();
@@ -165,10 +169,11 @@ public class MessageUtils {
     /**
      * Sends message to user in private channel.
      * <p></p>
-     * @param user Member to send private message to
+     *
+     * @param user    Member to send private message to
      * @param message MessageEmbed to send
      */
-    public void openPrivateChannelAndMessageUser(User user, MessageEmbed message){
+    public void openPrivateChannelAndMessageUser(User user, MessageEmbed message) {
         user
                 .openPrivateChannel()
                 .queue(privateChannel -> {
@@ -179,10 +184,11 @@ public class MessageUtils {
     /**
      * Sends message to user in private channel.
      * <p></p>
-     * @param user Member to send private message to
+     *
+     * @param user    Member to send private message to
      * @param message MessageCreateData to send
      */
-    public void openPrivateChannelAndMessageUser(User user, MessageCreateData message){
+    public void openPrivateChannelAndMessageUser(User user, MessageCreateData message) {
         user
                 .openPrivateChannel()
                 .queue(privateChannel -> {
@@ -193,13 +199,14 @@ public class MessageUtils {
     /**
      * Sends message to user in private channel or in channel where command was invoked.
      * <p></p>
-     * @param ctx CommandContext to get member from
+     *
+     * @param ctx     CommandContext to get member from
      * @param message Message to send
      */
-    public void respondToUser(CommandContext ctx, String message){
-        if(configModel.isRespondInDirectMessage()){
+    public void respondToUser(CommandContext ctx, String message) {
+        if (configModel.isRespondInDirectMessage()) {
             openPrivateChannelAndMessageUser(ctx.getMember().getUser(), message);
-        }else{
+        } else {
             ctx.getMessage().reply(message).queue();
         }
     }
@@ -207,7 +214,8 @@ public class MessageUtils {
     /**
      * Sends message to user in private channel or in channel where command was invoked.
      * <p></p>
-     * @param ctx CommandContext to get member from
+     *
+     * @param ctx     CommandContext to get member from
      * @param message MessageEmbed to send
      */
     public void respondToUser(CommandContext ctx, MessageEmbed message) {
@@ -221,10 +229,11 @@ public class MessageUtils {
     /**
      * Sends message to user in private channel or in channel where command was invoked.
      * <p></p>
-     * @param ctx CommandContext to get member from
+     *
+     * @param ctx     CommandContext to get member from
      * @param message MessageCreateData to send
      */
-    public void respondToUser(CommandContext ctx, MessageCreateData message){
+    public void respondToUser(CommandContext ctx, MessageCreateData message) {
         if (configModel.isRespondInDirectMessage()) {
             openPrivateChannelAndMessageUser(ctx.getMember().getUser(), message);
         } else {
@@ -236,17 +245,18 @@ public class MessageUtils {
     /**
      * Get raw command content from MessageReceivedEvent when command is invoked.
      * <p></p>
+     *
      * @param event MessageReceivedEvent to get command from
      * @return raw command content
      */
     public String rawCommandContent(MessageReceivedEvent event) {
 
         String command = event.getMessage().getContentRaw();
-        if(fireStoreService.getModel().isRespondByPrefix()){
+        if (fireStoreService.getModel().isRespondByPrefix()) {
             String prefix = fireStoreService.getModel()
                     .getPrefix();
             command = command.replace(prefix, "");
-        }else{
+        } else {
             //delete bot mention
             command = command.replace("<@" + event.getJDA().getSelfUser().getId() + ">", "");
         }
@@ -256,13 +266,28 @@ public class MessageUtils {
     /**
      * Bans users from guild.
      * <p></p>
+     *
      * @param toBeBannedIds List of users to be banned
-     * @param guild Guild to ban users from
+     * @param guild         Guild to ban users from
      */
     public void banUsers(List<String> toBeBannedIds, Guild guild) {
         TextChannel channel = guild.getChannelById(TextChannel.class, fireStoreService.getModel().getChannelIdToSendDeletedMessages());
+        MessageChannel logChannel = guild.getChannelById(MessageChannel.class, fireStoreService.getModel().getChannelIdToSendLog());
         toBeBannedIds.forEach(id -> {
+                    Member member = guild.getMemberById(id);
                     channel.sendMessage("!tempban <@" + id + "> 365d niespełnianie wymagań wiekowych").queue();
+
+                    StringBuilder sb = new StringBuilder();
+                    sb
+                            .append("<@")
+                            .append(id)
+                            .append("> - ")
+                            .append(member.getUser().getName())
+                            .append(" - ")
+                            .append("tempban rok")
+                            .append(" - ").append("niespełnianie wymagań wiekowych");
+                    if (logChannel != null)
+                        logChannel.sendMessage(sb.toString()).queue();
                 }
         );
     }
@@ -270,6 +295,7 @@ public class MessageUtils {
     /**
      * Checks if member should be excluded from bot actions.
      * <p></p>
+     *
      * @param member Member to check
      * @return true if member should be excluded from bot actions, false otherwise
      */

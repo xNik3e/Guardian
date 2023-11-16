@@ -1,10 +1,7 @@
 package pl.xnik3e.Guardian.components.Command.Commands;
 
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.MessageEmbed;
-import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.utils.concurrent.Task;
 import pl.xnik3e.Guardian.Services.FireStoreService;
@@ -108,29 +105,49 @@ public class BanUsersWithRoleCommand implements ICommand {
                 respondToUser(ctx, event, eBuilder);
                 return;
             }
-            Task<List<Member>> task = guild.findMembersWithRoles(role);
 
-            task.onSuccess(members -> {
-                List<String> toBeBannedIds = new ArrayList<>();
-                members.forEach(member -> {
-                    if (messageUtils.performMemberCheck(member)) return;
-                    toBeBannedIds.add(member.getUser().getId());
-                });
-                if(event != null)
-                    event.getHook().sendMessageEmbeds(
-                            eBuilder.setTitle("Banning users")
-                                    .setDescription("Banning users with role: **" + role.getName() + "**")
-                                    .setColor(Color.GREEN)
-                                    .build()
-                    ).setEphemeral(true).queue();
-                messageUtils.banUsers(toBeBannedIds, guild);
-            });
+            User user = event.getUser();
+            if(!fireStoreService.getModel().getExcludedUserIds().contains(user.getId())){
+                eBuilder.setTitle("Missing permissions");
+                eBuilder.setDescription("Hey! Only users with granted permissions can choose different role to ban\n" +
+                        "Try using the command without an argument to purge default role");
+                eBuilder.setColor(Color.RED);
+                respondToUser(ctx, event, eBuilder);
+                return;
+            }
+            banExactRole(event, guild, role, eBuilder);
         }else{
-            eBuilder.setTitle("Empty argument");
-            eBuilder.setDescription("Please provide valid role id or mention");
-            eBuilder.setColor(Color.RED);
-            respondToUser(ctx, event, eBuilder);
+            String roleToDelete = fireStoreService.getModel().getRolesToDelete().get(0);
+            Role role = guild.getRoleById(roleToDelete);
+            if (role == null) {
+                eBuilder.setTitle("An error occurred");
+                eBuilder.setDescription("Please provide valid role id or mention");
+                eBuilder.setColor(Color.RED);
+                respondToUser(ctx, event, eBuilder);
+                return;
+            }
+            banExactRole(event, guild, role, eBuilder);
         }
+    }
+
+    private void banExactRole(SlashCommandInteractionEvent event, Guild guild, Role role, EmbedBuilder eBuilder) {
+        Task<List<Member>> task = guild.findMembersWithRoles(role);
+
+        task.onSuccess(members -> {
+            List<String> toBeBannedIds = new ArrayList<>();
+            members.forEach(member -> {
+                if (messageUtils.performMemberCheck(member)) return;
+                toBeBannedIds.add(member.getUser().getId());
+            });
+            if(event != null)
+                event.getHook().sendMessageEmbeds(
+                        eBuilder.setTitle("Banning users")
+                                .setDescription("Banning users with role: **" + role.getName() + "**")
+                                .setColor(Color.GREEN)
+                                .build()
+                ).setEphemeral(true).queue();
+            messageUtils.banUsers(toBeBannedIds, guild);
+        });
     }
 
 
