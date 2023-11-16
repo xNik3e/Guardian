@@ -2,6 +2,8 @@ package pl.xnik3e.Guardian.components.Command.Commands;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import org.jetbrains.annotations.NotNull;
 import pl.xnik3e.Guardian.Services.FireStoreService;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
 import pl.xnik3e.Guardian.components.Command.CommandContext;
@@ -25,14 +27,14 @@ public class ToggleBotResponseCommand implements ICommand {
         boolean deleteTriggerMessage = firestoreService.getModel().isDeleteTriggerMessage();
         if(deleteTriggerMessage)
             ctx.getMessage().delete().queue();
-        EmbedBuilder embedBuilder = new EmbedBuilder();
-        boolean respondInDirect = !firestoreService.getModel().isRespondInDirectMessage();
-        firestoreService.getModel().setRespondInDirectMessage(respondInDirect);
-        firestoreService.updateConfigModel();
-        embedBuilder.setTitle("Hello there!");
-        embedBuilder.setDescription("I will now respond back to you by: **" + (respondInDirect ? "direct message" : "message reply") + "**");
-        embedBuilder.setColor(Color.GREEN);
+        EmbedBuilder embedBuilder = getEmbedBuilder();
         messageUtils.respondToUser(ctx, embedBuilder.build());
+    }
+
+    @Override
+    public void handleSlash(SlashCommandInteractionEvent event, List<String> args) {
+        EmbedBuilder embedBuilder = getEmbedBuilder();
+        event.getHook().sendMessageEmbeds(embedBuilder.build()).setEphemeral(true).queue();
     }
 
     @Override
@@ -71,5 +73,17 @@ public class ToggleBotResponseCommand implements ICommand {
     @Override
     public List<String> getAliases() {
         return List.of("tbr", "toggleresponse", "changeresponse", "changereply", "togglereply");
+    }
+
+    @NotNull
+    private EmbedBuilder getEmbedBuilder() {
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        boolean respondInDirect = !firestoreService.getModel().isRespondInDirectMessage();
+        firestoreService.getModel().setRespondInDirectMessage(respondInDirect);
+        firestoreService.updateConfigModel();
+        embedBuilder.setTitle("Hello there!");
+        embedBuilder.setDescription("I will now respond back to you by: **" + (respondInDirect ? "direct message" : "message reply") + "**");
+        embedBuilder.setColor(Color.GREEN);
+        return embedBuilder;
     }
 }

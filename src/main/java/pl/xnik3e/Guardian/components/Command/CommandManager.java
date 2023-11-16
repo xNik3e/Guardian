@@ -3,6 +3,7 @@ package pl.xnik3e.Guardian.components.Command;
 import lombok.Getter;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -90,6 +91,33 @@ public class CommandManager {
         }
     }
 
+    public void handle(SlashCommandInteractionEvent event, String command){
+        String[] split = command.split("\\s+");
+        String invoke = split[0].toLowerCase();
+        ICommand cmd = this.getCommand(invoke);
+
+        if(cmd == null){
+            EmbedBuilder embedBuilder = new EmbedBuilder();
+            embedBuilder.setTitle("Command not found");
+            embedBuilder.setDescription("Use `" + messageUtils.getFireStoreService().getModel().getPrefix() + "help` to see all available commands");
+            embedBuilder.setColor(Color.RED);
+            event.replyEmbeds(embedBuilder.build()).setEphemeral(true).queue();
+            return;
+        }
+
+        if (checkInit(cmd)) {
+            List<String> args = Arrays.asList(split).subList(1, split.length);
+            cmd.handleSlash(event, args);
+        }else{
+            User user = event.getUser();
+            EmbedBuilder embedBuilder = new EmbedBuilder();
+            embedBuilder.setTitle("Bot not initialized");
+            embedBuilder.setDescription("You should run the *init* command first");
+            embedBuilder.setColor(Color.RED);
+            event.getHook().sendMessageEmbeds(embedBuilder.build()).setEphemeral(true).queue();
+        }
+    }
+
     public boolean checkInit(@Nonnull ICommand cmd){
         boolean a = cmd.isAfterInit();
         boolean b = messageUtils.getFireStoreService().getModel().isInit();
@@ -99,4 +127,5 @@ public class CommandManager {
         //command not require init return true
         return !a || b;
     }
+
 }

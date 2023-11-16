@@ -2,6 +2,8 @@ package pl.xnik3e.Guardian.components.Command.Commands;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import org.jetbrains.annotations.NotNull;
 import pl.xnik3e.Guardian.Services.FireStoreService;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
 import pl.xnik3e.Guardian.components.Command.CommandContext;
@@ -25,12 +27,14 @@ public class ToggleMentionCommand implements ICommand {
         boolean deleteTriggerMessage = fireStoreService.getModel().isDeleteTriggerMessage();
         if(deleteTriggerMessage)
             ctx.getMessage().delete().queue();
-        fireStoreService.getModel().setRespondByPrefix(false);
-        fireStoreService.updateConfigModel();
-        EmbedBuilder eBuilder = new EmbedBuilder();
-        eBuilder.setTitle("Respond by mention");
-        eBuilder.setDescription("Bot is now responding by: **mention**");
+        EmbedBuilder eBuilder = getEmbedBuilder();
         messageUtils.respondToUser(ctx, eBuilder.build());
+    }
+
+    @Override
+    public void handleSlash(SlashCommandInteractionEvent event, List<String> args) {
+        EmbedBuilder eBuilder = getEmbedBuilder();
+        event.getHook().sendMessageEmbeds(eBuilder.build()).setEphemeral(true).queue();
     }
 
     @Override
@@ -69,5 +73,15 @@ public class ToggleMentionCommand implements ICommand {
     @Override
     public List<String> getAliases() {
         return List.of("mention", "m", "setmention", "changemention");
+    }
+
+    @NotNull
+    private EmbedBuilder getEmbedBuilder() {
+        fireStoreService.getModel().setRespondByPrefix(false);
+        fireStoreService.updateConfigModel();
+        EmbedBuilder eBuilder = new EmbedBuilder();
+        eBuilder.setTitle("Respond by mention");
+        eBuilder.setDescription("Bot is now responding by: **mention**");
+        return eBuilder;
     }
 }

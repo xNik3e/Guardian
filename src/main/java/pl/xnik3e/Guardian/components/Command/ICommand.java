@@ -1,10 +1,12 @@
 package pl.xnik3e.Guardian.components.Command;
 import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 
 import java.util.List;
 
 public interface ICommand {
     void handle(CommandContext ctx);
+    void handleSlash(SlashCommandInteractionEvent event, List<String> args);
     String getName();
     MessageEmbed getHelp();
     String getDescription();

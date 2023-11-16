@@ -2,11 +2,12 @@ package pl.xnik3e.Guardian.components.Command.Commands;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import org.jetbrains.annotations.NotNull;
 import pl.xnik3e.Guardian.Services.FireStoreService;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
 import pl.xnik3e.Guardian.components.Command.CommandContext;
 import pl.xnik3e.Guardian.components.Command.ICommand;
-
 import java.awt.*;
 import java.util.List;
 
@@ -23,18 +24,18 @@ public class DeleteTriggerCommand implements ICommand {
     @Override
     public void handle(CommandContext ctx) {
         boolean deleteTriggerMessage = fireStoreService.getModel().isDeleteTriggerMessage();
-        if(!deleteTriggerMessage)
+        if(!deleteTriggerMessage) {
             ctx.getMessage().delete().queue();
-
-        fireStoreService.getModel().setDeleteTriggerMessage(!deleteTriggerMessage);
-        fireStoreService.updateConfigModel();
-
-        EmbedBuilder embedBuilder = new EmbedBuilder();
-        embedBuilder.setTitle("Hello there!");
-        embedBuilder.setDescription("From now, I " + (!deleteTriggerMessage ? "will " : "won't " ) + "delete trigger messages");
-        embedBuilder.setColor(Color.GREEN);
+        }
+        EmbedBuilder embedBuilder = getEmbedBuilder(deleteTriggerMessage);
         messageUtils.respondToUser(ctx, embedBuilder.build());
+    }
 
+    @Override
+    public void handleSlash(SlashCommandInteractionEvent event, List<String> args) {
+        boolean deleteTriggerMessage = fireStoreService.getModel().isDeleteTriggerMessage();
+        EmbedBuilder embedBuilder = getEmbedBuilder(deleteTriggerMessage);
+        event.getHook().sendMessageEmbeds(embedBuilder.build()).setEphemeral(true).queue();
     }
 
     @Override
@@ -72,5 +73,17 @@ public class DeleteTriggerCommand implements ICommand {
     @Override
     public List<String> getAliases() {
         return List.of("dt", "removetrigger", "rt");
+    }
+
+    @NotNull
+    private EmbedBuilder getEmbedBuilder(boolean deleteTriggerMessage) {
+        fireStoreService.getModel().setDeleteTriggerMessage(!deleteTriggerMessage);
+        fireStoreService.updateConfigModel();
+
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setTitle("Hello there!");
+        embedBuilder.setDescription("From now, I " + (!deleteTriggerMessage ? "will " : "won't " ) + "delete trigger messages");
+        embedBuilder.setColor(Color.GREEN);
+        return embedBuilder;
     }
 }
