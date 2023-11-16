@@ -1,6 +1,7 @@
 package pl.xnik3e.Guardian.listeners;
 
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.UserSnowflake;
@@ -63,12 +64,13 @@ public class MessageCommandListener extends ListenerAdapter {
                 break;
             case "unban":
                 String messageId = event.getMessageId();
-                event.deferReply().queue();
+                Message message = event.getMessage();
+                event.deferEdit().queue();
                 Thread thread = new Thread(() -> {
                     TempBanModel tempBanModel = fireStoreService.fetchBanModel(messageId);
                     if(tempBanModel != null){
                         event.getGuild().unban(UserSnowflake.fromId(tempBanModel.getUserId())).queue(s -> {
-                            event.getHook().deleteOriginal().queue();
+                            message.delete().queue();
                             fireStoreService.deleteBanModel(messageId);
                         }, f -> {
                             messageUtils.openPrivateChannelAndMessageUser(event.getUser(), "Something went wrong");
