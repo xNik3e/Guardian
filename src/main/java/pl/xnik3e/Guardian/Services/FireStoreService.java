@@ -8,9 +8,11 @@ import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import pl.xnik3e.Guardian.Models.ConfigModel;
+import pl.xnik3e.Guardian.Models.TempBanModel;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Getter
 @Service
@@ -110,6 +112,30 @@ public class FireStoreService {
         model.setRespondByPrefix(!model.isRespondByPrefix());
         System.out.println("Respond by prefix: " + (model.isRespondByPrefix() ? "enabled" : "disabled"));
         updateConfigModel();
+    }
+
+    public void setTempBanModel(TempBanModel banModel){
+        ApiFuture<WriteResult> future = firestore.collection("tempbans").document(banModel.getMessageId()).set(banModel);
+        if(future.isDone()){
+            System.out.println("Added tempban model");
+        }
+    }
+
+    public TempBanModel fetchBanModel(String messageId){
+        ApiFuture<DocumentSnapshot> future = firestore.collection("tempbans").document(messageId).get();
+        try {
+            DocumentSnapshot document = future.get(5, TimeUnit.SECONDS);
+            return document.toObject(TempBanModel.class);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public void deleteBanModel(String messageId){
+        ApiFuture<WriteResult> future = firestore.collection("tempbans").document(messageId).delete();
+        if(future.isDone()){
+            System.out.println("Deleted tempban model");
+        }
     }
 
 }
