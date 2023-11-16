@@ -3,14 +3,17 @@ package pl.xnik3e.Guardian.Services;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.firestore.WriteResult;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import pl.xnik3e.Guardian.Models.ConfigModel;
+import pl.xnik3e.Guardian.Models.TempBanModel;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Getter
 @Service
@@ -110,6 +113,48 @@ public class FireStoreService {
         model.setRespondByPrefix(!model.isRespondByPrefix());
         System.out.println("Respond by prefix: " + (model.isRespondByPrefix() ? "enabled" : "disabled"));
         updateConfigModel();
+    }
+
+    public void setTempBanModel(TempBanModel banModel){
+        ApiFuture<WriteResult> future = firestore.collection("tempbans").document(banModel.getMessageId()).set(banModel);
+        if(future.isDone()){
+            System.out.println("Added tempban model");
+        }
+    }
+
+    public TempBanModel fetchBanModel(String messageId){
+        ApiFuture<DocumentSnapshot> future = firestore.collection("tempbans").document(messageId).get();
+        try {
+            DocumentSnapshot document = future.get(5, TimeUnit.SECONDS);
+            return document.toObject(TempBanModel.class);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public void deleteBanModel(String messageId){
+        ApiFuture<WriteResult> future = firestore.collection("tempbans").document(messageId).delete();
+        if(future.isDone()){
+            System.out.println("Deleted tempban model");
+        }
+    }
+
+
+    public List<TempBanModel> queryBans(){
+        long now = System.currentTimeMillis();
+        List<TempBanModel> tempBanModels = new ArrayList<>();
+        ApiFuture<QuerySnapshot> future = firestore.collection("tempbans").whereLessThan("banTime", now).get();
+        try{
+            future.get(10, TimeUnit.SECONDS).getDocuments().forEach(document -> {
+                TempBanModel tempBanModel = document.toObject(TempBanModel.class);
+                if(tempBanModel != null){
+                    tempBanModels.add(tempBanModel);
+                }
+            });
+            return tempBanModels;
+        }catch (Exception e){
+            return null;
+        }
     }
 
 }

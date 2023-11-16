@@ -1,18 +1,28 @@
 package pl.xnik3e.Guardian.Utils;
 
 import lombok.Getter;
+import lombok.NonNull;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.interactions.components.buttons.Button;
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import pl.xnik3e.Guardian.Models.ConfigModel;
+import pl.xnik3e.Guardian.Models.TempBanModel;
 import pl.xnik3e.Guardian.Services.FireStoreService;
 import pl.xnik3e.Guardian.components.Command.CommandContext;
 
+import java.awt.*;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Getter
 @Service
@@ -276,7 +286,7 @@ public class MessageUtils {
 
         toBeBannedIds.forEach(id -> {
                     Member member = guild.getMemberById(id);
-                    channel.sendMessage("!tempban <@" + id + "> 365d niespełnianie wymagań wiekowych").queue();
+                    tempBanUser(member.getUser(), channel, guild, 365, TimeUnit.DAYS, "Niespełnianie wymagań wiekowych");
 
                     StringBuilder sb = new StringBuilder();
                     sb
@@ -313,5 +323,55 @@ public class MessageUtils {
                 .anyMatch(excludedRoles::contains))
             return true;
         return excludedMembers.contains(member.getUser().getId());
+    }
+
+    private void tempBanUser(@NonNull User user, MessageChannel channel, Guild guild, long time, TimeUnit timeUnit, String reason){
+        TempBanModel tempBanModel = new TempBanModel();
+        tempBanModel.setUserId(user.getId());
+        tempBanModel.setAvatarUrl(user.getAvatarUrl());
+        tempBanModel.setUserName(user.getName());
+        tempBanModel.setReason(reason);
+
+        long timeInMillis = System.currentTimeMillis() + timeUnit.toMillis(time);
+        tempBanModel.setBanTime(timeInMillis);
+
+        //get time difference between current time and ban time in days
+        Date date = new Date(timeInMillis);
+        long days = (date.getTime() - System.currentTimeMillis()) / (1000 * 60 * 60 * 24);
+        long weeks = days / 7;
+        days = days % 7;
+
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setAuthor(
+                tempBanModel.getUserName() + "has been banned for " + weeks + " weeks and " + days + " days",
+                null,
+                tempBanModel.getAvatarUrl());
+        embedBuilder.setDescription("**Reason:** "+ tempBanModel.getReason());
+        DateFormat f = new SimpleDateFormat("dd.MM.yyyy");
+        embedBuilder.setFooter("Baned until | " + f.format(date));
+        embedBuilder.setColor(0x5acff5);
+
+        Button button = Button.danger("unban", "Unban");
+
+        MessageCreateData message = new MessageCreateBuilder()
+                .setEmbeds(embedBuilder.build())
+                .setActionRow(button)
+                .build();
+
+        long finalDays = days;
+        channel.sendMessage(message).queue(m -> {
+            tempBanModel.setMessageId(m.getId());
+            fireStoreService.setTempBanModel(tempBanModel);
+            guild.ban(user, 0, TimeUnit.SECONDS)
+                    .reason(reason)
+                    .queue(s -> {
+                        EmbedBuilder builder = new EmbedBuilder();
+                        builder.setTitle("Banned");
+                        builder.setDescription("You have been banned from " + guild.getName() + " for " + weeks + " weeks and " + finalDays + " days");
+                        builder.addField("Reason", reason, false);
+                        builder.setColor(Color.RED);
+                        openPrivateChannelAndMessageUser(user, builder.build());
+                    });
+        });
     }
 }
