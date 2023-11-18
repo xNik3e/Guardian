@@ -23,6 +23,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Getter
 @Service
@@ -30,6 +31,11 @@ public class MessageUtils {
 
     private final FireStoreService fireStoreService;
     private final ConfigModel configModel;
+    private final List<String> mentionableCharacters = List.of( "a", "ą", "b", "c", "ć", "d", "e", "ę", "f", "g", "h", "i", "j", "k", "l", "ł", "m",
+            "n", "o", "ó", "p", "q", "r", "s", "ś", "t", "u", "v", "w", "x", "y", "z", "ź", "ż", "A", "Ą", "B", "C", "Ć", "D", "E", "Ę", "F",
+            "G", "H", "I", "J", "K", "L", "Ł", "M", "N", "O", "Ó", "P", "Q", "R", "S", "Ś", "T", "U", "V", "W", "X", "Y", "Z", "Ź", "Ż", "1",
+            "2", "3", "4", "5", "6", "7", "8", "9", "0", " ", "-", "_", "!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "+", "=", "[", "]",".");
+
 
     @Autowired
     public MessageUtils(FireStoreService fireStoreService) {
@@ -373,5 +379,18 @@ public class MessageUtils {
                         openPrivateChannelAndMessageUser(user, builder.build());
                     });
         });
+    }
+
+    public boolean hasMentionableNickName(Member member) {
+        if(checkAuthority(member))
+            return true;
+        String nick = member.getEffectiveName();
+        AtomicInteger mentionable = new AtomicInteger();
+        nick.chars().forEach(c -> {
+            if(mentionableCharacters.contains(String.valueOf((char) c)))
+                mentionable.getAndIncrement();
+        });
+        float percent = (float) (mentionable.get() * 100) / nick.length();
+        return percent > 75;
     }
 }
