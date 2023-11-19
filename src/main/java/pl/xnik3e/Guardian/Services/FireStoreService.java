@@ -11,11 +11,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import pl.xnik3e.Guardian.Models.ConfigModel;
 import pl.xnik3e.Guardian.Models.EnvironmentModel;
+import pl.xnik3e.Guardian.Models.NickNameModel;
 import pl.xnik3e.Guardian.Models.TempBanModel;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 @Getter
 @Service
@@ -149,4 +152,29 @@ public class FireStoreService {
         }
     }
 
+    public NickNameModel getNickNameModel(String userID){
+        NickNameModel model;
+        ApiFuture<DocumentSnapshot> future = firestore.collection("whitelist").document(userID).get();
+        try{
+           return future.get(5, TimeUnit.SECONDS).toObject(NickNameModel.class);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public boolean checkIfWhitelisted(String nickName){
+        ApiFuture<QuerySnapshot> future = firestore.collection("whitelist").whereEqualTo("nickName", nickName).get();
+        try{
+            return !future.get(5, TimeUnit.SECONDS).getDocuments().isEmpty();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public void deleteNickNameModel(String userID){
+        ApiFuture<WriteResult> future = firestore.collection("whitelist").document(userID).delete();
+        if(future.isDone()){
+            System.out.println("Deleted nickname model");
+        }
+    }
 }
