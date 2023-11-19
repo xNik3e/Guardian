@@ -107,7 +107,7 @@ public class MessageCommandListener extends ListenerAdapter {
                     embedBuilder.setColor(Color.PINK);
                     event.getHook().editOriginalEmbeds(embedBuilder.build()).queue();
                     MessageChannel logChannel = event.getJDA().getGuildById(fireStoreService.getEnvironmentModel().getGUILD_ID())
-                            .getChannelById(MessageChannel.class, fireStoreService.getModel().getChannelIdToSendLog());
+                            .getChannelById(MessageChannel.class, fireStoreService.getModel().getChannelIdToSendDeletedMessages());
                     if (logChannel != null) {
                         embedBuilder.setTitle("Odwołanie automatycznej zmiany nicku");
                         embedBuilder.addField("User", user.getAsMention(), false);
