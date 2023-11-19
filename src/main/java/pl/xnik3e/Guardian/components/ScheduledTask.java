@@ -21,7 +21,6 @@ public class ScheduledTask {
     private final FireStoreService fireStoreService;
     private final MessageUtils messageUtils;
     private final JDA jda;
-    private final Dotenv config;
 
 
     @Autowired
@@ -29,7 +28,6 @@ public class ScheduledTask {
         this.messageUtils = messageUtils;
         this.fireStoreService = messageUtils.getFireStoreService();
         this.jda = bot.getJda();
-        this.config = Dotenv.configure().load();
     }
 
 
@@ -51,7 +49,7 @@ public class ScheduledTask {
     //scheduled every 1 minute
     @Scheduled(fixedRate = 60 * 1000)
     public void unbanUsers(){
-        Guild guild = jda.getGuildById(config.get("GUILD_ID"));
+        Guild guild = jda.getGuildById(fireStoreService.getEnvironmentModel().getGUILD_ID());
         Thread thread = new Thread(() -> {
             List<TempBanModel> tempBanModels = fireStoreService.queryBans();
             tempBanModels.forEach(model -> {

@@ -48,12 +48,6 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-devtools</artifactId>
-			<scope>runtime</scope>
-			<optional>true</optional>
-		</dependency>
-		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
 			<optional>true</optional>
@@ -72,7 +66,7 @@
 		<dependency>
 			<groupId>net.dv8tion</groupId>
 			<artifactId>JDA</artifactId>
-			<version>5.0.0-alpha.22</version>
+			<version>5.0.0-beta.17</version>
 		</dependency>
 		<dependency>
 			<groupId>io.github.cdimascio</groupId>
@@ -85,7 +79,11 @@
 			<version>9.0.0</version>
 		</dependency>
 
-
+		<dependency>
+			<groupId>io.fabric8</groupId>
+			<artifactId>docker-maven-plugin</artifactId>
+			<version>0.43.4</version>
+		</dependency>
 		<dependency>
 			<groupId>org.awaitility</groupId>
 			<artifactId>awaitility</artifactId>
@@ -106,6 +104,7 @@
 							<artifactId>lombok</artifactId>
 						</exclude>
 					</excludes>
+
 				</configuration>
 			</plugin>
 		</plugins>

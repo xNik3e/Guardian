@@ -1,19 +1,23 @@
 package pl.xnik3e.Guardian.Services;
 
 import com.google.api.core.ApiFuture;
-import com.google.cloud.firestore.DocumentSnapshot;
-import com.google.cloud.firestore.Firestore;
-import com.google.cloud.firestore.QuerySnapshot;
-import com.google.cloud.firestore.WriteResult;
+import com.google.cloud.firestore.*;
+import com.google.cloud.firestore.annotation.DocumentId;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import pl.xnik3e.Guardian.Models.ConfigModel;
+import pl.xnik3e.Guardian.Models.EnvironmentModel;
+import pl.xnik3e.Guardian.Models.NickNameModel;
 import pl.xnik3e.Guardian.Models.TempBanModel;
 
+import javax.print.Doc;
+import java.rmi.server.UID;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 @Getter
 @Service
@@ -21,16 +25,18 @@ public class FireStoreService {
 
     private final Firestore firestore;
     private final ConfigModel model;
-    private final List<String> userIds = new ArrayList<>();
+    private final EnvironmentModel environmentModel;
 
     @Autowired
     public FireStoreService(Firestore firestore) {
         this.firestore = firestore;
         this.model = new ConfigModel();
+        this.environmentModel = new EnvironmentModel();
         fetchConfigModel();
-        fetchUserIds();
+        fetchEnvironmentModel();
         attachListeners();
     }
+
 
     private void attachListeners() {
         //Add listener to config to get updates
@@ -51,15 +57,16 @@ public class FireStoreService {
             }
         });
 
-        //Add listener to blacklist to get updates
-        firestore.collection("blacklist").document("toDelete").addSnapshotListener((snapshot, e) -> {
-            if (e != null) {
+
+        firestore.collection("global_config").document("environment").addSnapshotListener((snapshot, e) -> {
+            if(e != null) {
                 System.err.println("Listen failed: " + e);
                 return;
             }
-            if (snapshot != null && snapshot.exists()) {
-                userIds.clear();
-                userIds.addAll((List<String>) snapshot.get("userId"));
+            if(snapshot != null && snapshot.exists()) {
+                EnvironmentModel tempModel = snapshot.toObject(EnvironmentModel.class);
+                assert tempModel != null;
+                environmentModel.updateEnvironmentModel(tempModel);
             } else {
                 System.out.print("Current data: null");
             }
@@ -81,19 +88,18 @@ public class FireStoreService {
         thread.start();
     }
 
-    private synchronized void fetchUserIds() {
-        ApiFuture<DocumentSnapshot> future = firestore.collection("blacklist").document("toDelete").get();
-        Thread thread = new Thread(() -> {
-            try {
-                DocumentSnapshot document = future.get();
-                userIds.clear();
-                userIds.addAll((List<String>) document.get("userId"));
-            } catch (Exception e) {
-                System.out.println("Error fetching model from firestore");
-            }
-        });
-        thread.start();
+    private void fetchEnvironmentModel() {
+        ApiFuture<DocumentSnapshot> future = firestore.collection("global_config").document("environment").get();
+        try {
+            DocumentSnapshot document = future.get();
+            EnvironmentModel updatedModel = document.toObject(EnvironmentModel.class);
+            assert updatedModel != null : "Environment model is null";
+            environmentModel.updateEnvironmentModel(updatedModel);
+        } catch (Exception e) {
+            System.out.println("Error fetching model from firestore");
+        }
     }
+
 
     public void updateConfigModel() {
         ApiFuture<WriteResult> future = firestore.collection("config").document("config").set(model);
@@ -102,18 +108,6 @@ public class FireStoreService {
         }
     }
 
-    public void updateUserIds(){
-        ApiFuture<WriteResult> future = firestore.collection("blacklist").document("toDelete").update("userId", userIds);
-        if (future.isDone()) {
-            System.out.println("Updated userIds");
-        }
-    }
-
-    public void switchRespondByPrefix(){
-        model.setRespondByPrefix(!model.isRespondByPrefix());
-        System.out.println("Respond by prefix: " + (model.isRespondByPrefix() ? "enabled" : "disabled"));
-        updateConfigModel();
-    }
 
     public void setTempBanModel(TempBanModel banModel){
         ApiFuture<WriteResult> future = firestore.collection("tempbans").document(banModel.getMessageId()).set(banModel);
@@ -157,4 +151,59 @@ public class FireStoreService {
         }
     }
 
+    public NickNameModel getNickNameModel(String userID){
+        ApiFuture<DocumentSnapshot> future = firestore.collection("whitelist").document(userID).get();
+        try{
+           return future.get(5, TimeUnit.SECONDS).toObject(NickNameModel.class);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public boolean checkIfWhitelisted(String UID, String nickName){
+        ApiFuture<DocumentSnapshot> future = firestore.collection("whitelist").document(UID).get();
+        try{
+            DocumentSnapshot snapshot = future.get(5, TimeUnit.SECONDS);
+            return snapshot.toObject(NickNameModel.class).getNickName().contains(nickName);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public void deleteNickNameModel(String userID){
+        ApiFuture<WriteResult> future = firestore.collection("whitelist").document(userID).delete();
+        if(future.isDone()){
+            System.out.println("Deleted nickname model");
+        }
+    }
+
+    public void addNickModel(NickNameModel model) {
+        ApiFuture<WriteResult> future = firestore.collection("whitelist").document(model.getUserID()).set(model);
+        if(future.isDone()){
+            System.out.println("Added nickname model");
+        }
+    }
+
+    public void updateNickModel(NickNameModel model){
+        ApiFuture<DocumentSnapshot> future = firestore.collection("whitelist").document(model.getUserID()).get();
+        try {
+            NickNameModel nickModel = future.get(5, TimeUnit.SECONDS).toObject(NickNameModel.class);
+            if(nickModel != null && !nickModel.getNickName().contains(model.getNickName().get(0)))
+                nickModel.getNickName().add(model.getNickName().get(0));
+
+            addNickModel(nickModel);
+        } catch (Exception e) {
+            System.err.println("Error fetching model from firestore. Adding new model");
+            addNickModel(model);
+        }
+    }
+
+    public List<String> getWhitelistedNicknames(String userID){
+        ApiFuture<DocumentSnapshot> future = firestore.collection("whitelist").document(userID).get();
+        try{
+            return future.get(5, TimeUnit.SECONDS).toObject(NickNameModel.class).getNickName();
+        } catch (Exception e) {
+            return new ArrayList<>();
+        }
+    }
 }
