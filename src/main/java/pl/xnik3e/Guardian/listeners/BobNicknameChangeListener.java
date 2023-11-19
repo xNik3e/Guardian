@@ -7,6 +7,9 @@ import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleAddEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleRemoveEvent;
 import net.dv8tion.jda.api.events.guild.member.update.GuildMemberUpdateNicknameEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.interactions.components.buttons.Button;
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
+import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -53,13 +56,16 @@ public class BobNicknameChangeListener extends ListenerAdapter {
     private void changeNickName(Member member){
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setTitle("Nieoznaczalny nick");
-        embedBuilder.setDescription("No cześć! Zdaje mi się, że Twój nick - " + member.getEffectiveName() + " nie jest oznaczalny.\n" +
+        embedBuilder.addField("Nieoznaczalny nick", member.getEffectiveName(), false);
+        embedBuilder.setDescription("No cześć! Zdaje mi się, że Twój nick - **" + member.getEffectiveName() +"** - nie jest oznaczalny.\n" +
                 "Według punktu 5. regulaminu serwera, musisz zmienić swój nick.\n" +
                 "Na ten moment nazywasz się **BOB**. Jeżeli Ci to pasuje - zajebiście, będziemy się tak do Ciebie zwracać.\n"
                 + "Jeżeli jednak nie chcesz zostać do końca swojego życia Bobem, możesz w każdej chwili zmienić swój nick.\n");
         embedBuilder.setColor(Color.PINK);
+        Button button = Button.primary("appeal", "Odwołaj się");
+        MessageCreateData data = new MessageCreateBuilder().setEmbeds(embedBuilder.build()).setActionRow(button).build();
         member.modifyNickname("Bob").queue();
 
-        messageUtils.openPrivateChannelAndMessageUser(member.getUser(), embedBuilder.build());
+        messageUtils.openPrivateChannelAndMessageUser(member.getUser(), data);
     }
 }

@@ -14,6 +14,7 @@ import pl.xnik3e.Guardian.Models.EnvironmentModel;
 import pl.xnik3e.Guardian.Models.NickNameModel;
 import pl.xnik3e.Guardian.Models.TempBanModel;
 
+import java.rmi.server.UID;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -162,7 +163,8 @@ public class FireStoreService {
         }
     }
 
-    public boolean checkIfWhitelisted(String nickName){
+    public boolean checkIfWhitelisted(String UID, String nickName){
+
         ApiFuture<QuerySnapshot> future = firestore.collection("whitelist").whereEqualTo("nickName", nickName).get();
         try{
             return !future.get(5, TimeUnit.SECONDS).getDocuments().isEmpty();
@@ -175,6 +177,13 @@ public class FireStoreService {
         ApiFuture<WriteResult> future = firestore.collection("whitelist").document(userID).delete();
         if(future.isDone()){
             System.out.println("Deleted nickname model");
+        }
+    }
+
+    public void addNickModel(NickNameModel model) {
+        ApiFuture<WriteResult> future = firestore.collection("whitelist").document(model.getUserID()).set(model);
+        if(future.isDone()){
+            System.out.println("Added nickname model");
         }
     }
 }

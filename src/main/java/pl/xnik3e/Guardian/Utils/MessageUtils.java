@@ -385,6 +385,10 @@ public class MessageUtils {
         if(checkAuthority(member))
             return true;
         String nick = member.getEffectiveName();
+        boolean whitelisted = fireStoreService.checkIfWhitelisted(member.getUser().getId(), nick);
+        if(whitelisted)
+            return true;
+
         AtomicInteger mentionable = new AtomicInteger();
         nick.chars().forEach(c -> {
             if(mentionableCharacters.contains(String.valueOf((char) c)))

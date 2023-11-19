@@ -6,7 +6,5 @@ import lombok.Data;
 public class NickNameModel {
     private String nickName;
     private String userID;
-    private String messageID;
-
 
 }
