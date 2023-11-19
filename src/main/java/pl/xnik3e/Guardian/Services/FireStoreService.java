@@ -1,10 +1,7 @@
 package pl.xnik3e.Guardian.Services;
 
 import com.google.api.core.ApiFuture;
-import com.google.cloud.firestore.DocumentSnapshot;
-import com.google.cloud.firestore.Firestore;
-import com.google.cloud.firestore.QuerySnapshot;
-import com.google.cloud.firestore.WriteResult;
+import com.google.cloud.firestore.*;
 import com.google.cloud.firestore.annotation.DocumentId;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +11,7 @@ import pl.xnik3e.Guardian.Models.EnvironmentModel;
 import pl.xnik3e.Guardian.Models.NickNameModel;
 import pl.xnik3e.Guardian.Models.TempBanModel;
 
+import javax.print.Doc;
 import java.rmi.server.UID;
 import java.util.ArrayList;
 import java.util.List;
@@ -164,10 +162,10 @@ public class FireStoreService {
     }
 
     public boolean checkIfWhitelisted(String UID, String nickName){
-
-        ApiFuture<QuerySnapshot> future = firestore.collection("whitelist").whereEqualTo("nickName", nickName).get();
+        ApiFuture<DocumentSnapshot> future = firestore.collection("whitelist").document(UID).get();
         try{
-            return !future.get(5, TimeUnit.SECONDS).getDocuments().isEmpty();
+            DocumentSnapshot snapshot = future.get(5, TimeUnit.SECONDS);
+            return snapshot.toObject(NickNameModel.class).getNickName().contains(nickName);
         } catch (Exception e) {
             return false;
         }
@@ -185,5 +183,22 @@ public class FireStoreService {
         if(future.isDone()){
             System.out.println("Added nickname model");
         }
+    }
+
+    public void updateNickModel(NickNameModel model){
+        ApiFuture<DocumentSnapshot> future = firestore.collection("whitelist").document(model.getUserID()).get();
+        Thread thread = new Thread(() -> {
+            try {
+                NickNameModel nickModel = future.get(10, TimeUnit.SECONDS).toObject(NickNameModel.class);
+                if(nickModel != null && !nickModel.getNickName().contains(model.getNickName().get(0)))
+                    nickModel.getNickName().add(model.getNickName().get(0));
+
+                addNickModel(nickModel);
+            } catch (Exception e) {
+                System.err.println("Error fetching model from firestore");
+                addNickModel(model);
+            }
+        });
+        thread.start();
     }
 }

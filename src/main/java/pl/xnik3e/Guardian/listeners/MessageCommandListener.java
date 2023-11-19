@@ -128,19 +128,21 @@ public class MessageCommandListener extends ListenerAdapter {
                 Message message2 = event.getMessage();
                 message2.getEmbeds().get(0).getFields().forEach(field -> {
                     if (field.getName().equals("Nick"))
-                        nickNameModel.setNickName(field.getValue());
+                        nickNameModel.getNickName().add(field.getValue());
                     else if (field.getName().equals("UserID"))
                         nickNameModel.setUserID(field.getValue());
                 });
-                fireStoreService.addNickModel(nickNameModel);
+                fireStoreService.updateNickModel(nickNameModel);
                 event.getGuild().retrieveMemberById(nickNameModel.getUserID()).queue(member -> {
-                    member.modifyNickname(nickNameModel.getNickName()).queue();
+                    member.modifyNickname(nickNameModel.getNickName().get(0)).queue();
                     event.getHook().editOriginalComponents().queue();
-                    event.getHook().editOriginalEmbeds().queue();
-                    event.getHook().editOriginal("Nick **"
-                            + nickNameModel.getNickName()
-                            + "** został przywrócony użytkownikowi "
-                            + member.getAsMention()).queue();
+                    event.getHook().editOriginalEmbeds(new EmbedBuilder()
+                            .setTitle("Odwołanie przyjęte")
+                            .setDescription("Odwołanie o zmianę nicku dla użytkownika " +
+                                    member.getAsMention() + " zostało rozpatrzone pozytywnie\n" +
+                                    "Nick został przywrócony")
+                            .setColor(Color.GREEN)
+                            .build()).queue();
 
                     EmbedBuilder embedBuilder = new EmbedBuilder();
                     embedBuilder.setTitle("Odwołanie automatycznej zmiany nicku");
@@ -155,7 +157,7 @@ public class MessageCommandListener extends ListenerAdapter {
                 Message message3 = event.getMessage();
                 message3.getEmbeds().get(0).getFields().forEach(field -> {
                     if (field.getName().equals("Nick"))
-                        rejectedNickNameModel.setNickName(field.getValue());
+                        rejectedNickNameModel.getNickName().add(field.getValue());
                     else if (field.getName().equals("UserID"))
                         rejectedNickNameModel.setUserID(field.getValue());
                 });
@@ -165,7 +167,7 @@ public class MessageCommandListener extends ListenerAdapter {
                             .setTitle("Odwołanie odrzucone")
                             .setDescription("Odwołanie o zmianę nicku dla użytkownika " +
                                     member.getAsMention() + " zostało odrzucone")
-                            .addField("Poprzedni nick", rejectedNickNameModel.getNickName(), false)
+                            .addField("Poprzedni nick", rejectedNickNameModel.getNickName().get(0), false)
                             .setColor(Color.RED)
                             .build()).queue();
 

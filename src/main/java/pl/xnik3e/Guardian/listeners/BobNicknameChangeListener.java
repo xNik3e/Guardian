@@ -64,8 +64,11 @@ public class BobNicknameChangeListener extends ListenerAdapter {
         embedBuilder.setColor(Color.PINK);
         Button button = Button.primary("appeal", "Odwołaj się");
         MessageCreateData data = new MessageCreateBuilder().setEmbeds(embedBuilder.build()).setActionRow(button).build();
-        member.modifyNickname("Bob").queue();
-
-        messageUtils.openPrivateChannelAndMessageUser(member.getUser(), data);
+        try{
+            member.modifyNickname("Bob").queue();
+            messageUtils.openPrivateChannelAndMessageUser(member.getUser(), data);
+        }catch(Exception e){
+            System.err.println("User is higher in hierarchy than bot");
+        }
     }
 }
