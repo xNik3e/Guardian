@@ -187,18 +187,24 @@ public class FireStoreService {
 
     public void updateNickModel(NickNameModel model){
         ApiFuture<DocumentSnapshot> future = firestore.collection("whitelist").document(model.getUserID()).get();
-        Thread thread = new Thread(() -> {
-            try {
-                NickNameModel nickModel = future.get(10, TimeUnit.SECONDS).toObject(NickNameModel.class);
-                if(nickModel != null && !nickModel.getNickName().contains(model.getNickName().get(0)))
-                    nickModel.getNickName().add(model.getNickName().get(0));
+        try {
+            NickNameModel nickModel = future.get(5, TimeUnit.SECONDS).toObject(NickNameModel.class);
+            if(nickModel != null && !nickModel.getNickName().contains(model.getNickName().get(0)))
+                nickModel.getNickName().add(model.getNickName().get(0));
 
-                addNickModel(nickModel);
-            } catch (Exception e) {
-                System.err.println("Error fetching model from firestore");
-                addNickModel(model);
-            }
-        });
-        thread.start();
+            addNickModel(nickModel);
+        } catch (Exception e) {
+            System.err.println("Error fetching model from firestore. Adding new model");
+            addNickModel(model);
+        }
+    }
+
+    public List<String> getWhitelistedNicknames(String userID){
+        ApiFuture<DocumentSnapshot> future = firestore.collection("whitelist").document(userID).get();
+        try{
+            return future.get(5, TimeUnit.SECONDS).toObject(NickNameModel.class).getNickName();
+        } catch (Exception e) {
+            return new ArrayList<>();
+        }
     }
 }

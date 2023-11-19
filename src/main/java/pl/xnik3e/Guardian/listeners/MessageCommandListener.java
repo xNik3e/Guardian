@@ -21,9 +21,10 @@ import pl.xnik3e.Guardian.Services.FireStoreService;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
 import pl.xnik3e.Guardian.components.Command.CommandManager;
 
+import java.util.List;
 import java.awt.*;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Component
 public class MessageCommandListener extends ListenerAdapter {
@@ -136,13 +137,26 @@ public class MessageCommandListener extends ListenerAdapter {
                 event.getGuild().retrieveMemberById(nickNameModel.getUserID()).queue(member -> {
                     member.modifyNickname(nickNameModel.getNickName().get(0)).queue();
                     event.getHook().editOriginalComponents().queue();
+                    AtomicInteger index = new AtomicInteger(1);
+                    List<String> whitelistedNicknames = fireStoreService.getWhitelistedNicknames(nickNameModel.getUserID());
                     event.getHook().editOriginalEmbeds(new EmbedBuilder()
                             .setTitle("Odwołanie przyjęte")
                             .setDescription("Odwołanie o zmianę nicku dla użytkownika " +
                                     member.getAsMention() + " zostało rozpatrzone pozytywnie\n" +
                                     "Nick został przywrócony")
-                            .setColor(Color.GREEN)
-                            .build()).queue();
+                            .addField("Whitelista użytkownika",
+                                    fireStoreService.getWhitelistedNicknames(nickNameModel.getUserID())
+                                            .stream()
+                                            .map(nick -> index.getAndIncrement() + ". " + nick + "\n")
+                                            .reduce("", String::concat)
+                                    , false)
+                                    .addField("Usuń nick z whitelisty",
+                                            "Aby usunąć nick z whitelisty użyj komendy:\n**" + fireStoreService.getModel().getPrefix()
+                                            + "blacklist <@Member> <Nick index>**", false)
+                                    .addField("Wyświetl nicki z whitelisty",
+                                            "Aby wyświetlić nicki z whitelisty użyj komendy:\n**" + fireStoreService.getModel().getPrefix()
+                                            + "whitelist <@Member>**", false)
+                            .setColor(Color.GREEN).build()).queue();
 
                     EmbedBuilder embedBuilder = new EmbedBuilder();
                     embedBuilder.setTitle("Odwołanie automatycznej zmiany nicku");
