@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
+import pl.xnik3e.Guardian.Models.EnvironmentModel;
+import pl.xnik3e.Guardian.Services.FireStoreService;
 import pl.xnik3e.Guardian.components.Command.SlashCommandManager;
 import pl.xnik3e.Guardian.listeners.BobNicknameChangeListener;
 import pl.xnik3e.Guardian.listeners.MessageCommandListener;
@@ -26,19 +28,20 @@ public class GuardianDiscordBot {
     private final SlashCommandInteractionListener slashCommandInteractionListener;
     private final BobNicknameChangeListener bobNicknameChangeListener;
     private final SlashCommandManager slashCommandManager;
+    private final FireStoreService fireStoreService;
 
 
     @Autowired
-    private GuardianDiscordBot(Firestore firestore, MessageCommandListener messageCommandListener, SlashCommandInteractionListener slashCommandInteractionListener, BobNicknameChangeListener bobNicknameChangeListener, SlashCommandManager slashCommandManager) {
-
+    private GuardianDiscordBot(MessageCommandListener messageCommandListener, SlashCommandInteractionListener slashCommandInteractionListener, BobNicknameChangeListener bobNicknameChangeListener, SlashCommandManager slashCommandManager, FireStoreService fireStoreService) {
         this.messageCommandListener = messageCommandListener;
         this.slashCommandInteractionListener = slashCommandInteractionListener;
         this.bobNicknameChangeListener = bobNicknameChangeListener;
         this.slashCommandManager = slashCommandManager;
+        this.fireStoreService = fireStoreService;
         try {
-            config = Dotenv.configure().load();
+            EnvironmentModel eModel = fireStoreService.getEnvironmentModel();
             JDABuilder builder = JDABuilder
-                    .createDefault(config.get("TOKEN"))
+                    .createDefault(eModel.getTOKEN())
                     .setMemberCachePolicy(MemberCachePolicy.ALL)
                     .enableIntents(GatewayIntent.GUILD_MEMBERS)
                     .enableIntents(GatewayIntent.MESSAGE_CONTENT)
@@ -50,7 +53,7 @@ public class GuardianDiscordBot {
 
             jda = builder.build().awaitReady();
 
-            Guild guild = jda.getGuildById(config.get("GUILD_ID"));
+            Guild guild = jda.getGuildById(eModel.getGUILD_ID());
             if (guild != null)
                 slashCommandManager.updateSlashCommand(guild);
 

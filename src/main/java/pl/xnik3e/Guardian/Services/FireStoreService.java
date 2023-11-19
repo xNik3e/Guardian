@@ -5,10 +5,12 @@ import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.firestore.WriteResult;
+import com.google.cloud.firestore.annotation.DocumentId;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import pl.xnik3e.Guardian.Models.ConfigModel;
+import pl.xnik3e.Guardian.Models.EnvironmentModel;
 import pl.xnik3e.Guardian.Models.TempBanModel;
 
 import java.util.ArrayList;
@@ -21,16 +23,18 @@ public class FireStoreService {
 
     private final Firestore firestore;
     private final ConfigModel model;
-    private final List<String> userIds = new ArrayList<>();
+    private final EnvironmentModel environmentModel;
 
     @Autowired
     public FireStoreService(Firestore firestore) {
         this.firestore = firestore;
         this.model = new ConfigModel();
+        this.environmentModel = new EnvironmentModel();
         fetchConfigModel();
-        fetchUserIds();
+        fetchEnvironmentModel();
         attachListeners();
     }
+
 
     private void attachListeners() {
         //Add listener to config to get updates
@@ -51,15 +55,16 @@ public class FireStoreService {
             }
         });
 
-        //Add listener to blacklist to get updates
-        firestore.collection("blacklist").document("toDelete").addSnapshotListener((snapshot, e) -> {
-            if (e != null) {
+
+        firestore.collection("global_config").document("environment").addSnapshotListener((snapshot, e) -> {
+            if(e != null) {
                 System.err.println("Listen failed: " + e);
                 return;
             }
-            if (snapshot != null && snapshot.exists()) {
-                userIds.clear();
-                userIds.addAll((List<String>) snapshot.get("userId"));
+            if(snapshot != null && snapshot.exists()) {
+                EnvironmentModel tempModel = snapshot.toObject(EnvironmentModel.class);
+                assert tempModel != null;
+                environmentModel.updateEnvironmentModel(tempModel);
             } else {
                 System.out.print("Current data: null");
             }
@@ -81,19 +86,18 @@ public class FireStoreService {
         thread.start();
     }
 
-    private synchronized void fetchUserIds() {
-        ApiFuture<DocumentSnapshot> future = firestore.collection("blacklist").document("toDelete").get();
-        Thread thread = new Thread(() -> {
-            try {
-                DocumentSnapshot document = future.get();
-                userIds.clear();
-                userIds.addAll((List<String>) document.get("userId"));
-            } catch (Exception e) {
-                System.out.println("Error fetching model from firestore");
-            }
-        });
-        thread.start();
+    private void fetchEnvironmentModel() {
+        ApiFuture<DocumentSnapshot> future = firestore.collection("global_config").document("environment").get();
+        try {
+            DocumentSnapshot document = future.get();
+            EnvironmentModel updatedModel = document.toObject(EnvironmentModel.class);
+            assert updatedModel != null : "Environment model is null";
+            environmentModel.updateEnvironmentModel(updatedModel);
+        } catch (Exception e) {
+            System.out.println("Error fetching model from firestore");
+        }
     }
+
 
     public void updateConfigModel() {
         ApiFuture<WriteResult> future = firestore.collection("config").document("config").set(model);
@@ -102,18 +106,6 @@ public class FireStoreService {
         }
     }
 
-    public void updateUserIds(){
-        ApiFuture<WriteResult> future = firestore.collection("blacklist").document("toDelete").update("userId", userIds);
-        if (future.isDone()) {
-            System.out.println("Updated userIds");
-        }
-    }
-
-    public void switchRespondByPrefix(){
-        model.setRespondByPrefix(!model.isRespondByPrefix());
-        System.out.println("Respond by prefix: " + (model.isRespondByPrefix() ? "enabled" : "disabled"));
-        updateConfigModel();
-    }
 
     public void setTempBanModel(TempBanModel banModel){
         ApiFuture<WriteResult> future = firestore.collection("tempbans").document(banModel.getMessageId()).set(banModel);
