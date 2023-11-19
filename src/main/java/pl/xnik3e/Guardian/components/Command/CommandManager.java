@@ -36,6 +36,7 @@ public class CommandManager {
         addCommand(new ToggleBotResponseCommand(messageUtils));
         addCommand(new ResetCommand(messageUtils));
         addCommand(new DeleteTriggerCommand(messageUtils));
+        addCommand(new WhitelistCommand(messageUtils));
     }
 
     private void addCommand(ICommand cmd) {

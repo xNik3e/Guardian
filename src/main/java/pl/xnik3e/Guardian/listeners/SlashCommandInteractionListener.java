@@ -87,6 +87,15 @@ public class SlashCommandInteractionListener extends ListenerAdapter {
                 command.append("reset");
                 manager.handle(event, command.toString());
                 break;
+            case "whitelist":
+                command.append("whitelist");
+                Optional<OptionMapping> optionWhitelist = Optional.of(event.getOption("user"));
+                if(optionWhitelist.isPresent()){
+                    String argument = optionWhitelist.get().getAsString();
+                    command.append(" ").append(argument);
+                }
+                manager.handle(event, command.toString());
+                break;
             default:
                 event.getHook().sendMessage("Command not found").setEphemeral(true).queue();
 

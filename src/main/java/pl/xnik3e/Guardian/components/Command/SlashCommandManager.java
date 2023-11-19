@@ -42,7 +42,9 @@ public class SlashCommandManager {
                         .addOption(OptionType.ROLE, "role", "Role to ban", false),
                 Commands.slash("tbr", "Toggle bot response"),
                 Commands.slash("dt", "Delete message trigger"),
-                Commands.slash("reset", "Reset bot")
+                Commands.slash("reset", "Reset bot"),
+                Commands.slash("whitelist", "Get whitelisted nicknames for User")
+                        .addOption(OptionType.USER, "user", "User to get whitelist", true)
         ).queue();
     }
 }
