@@ -54,11 +54,11 @@ public class NickBlackListCommand implements ICommand {
                 "`{prefix or mention} blacklist <user id> <nickname index or **ALL**>`",
                 false);
         builder.addField("Example usage",
-                "`" + fireStoreService.getModel().getPrefix() + "blacklist 1164645019769131029 1`" +
+                "`" + fireStoreService.getModel().getPrefix() + "blacklist 1164645019769131029 1`\n" +
                         "`" + fireStoreService.getModel().getPrefix() + "blacklist @xnik3e ALL`",
                 false);
         builder.addField("Available aliases", "`bl`", false);
-        Color color = new Color((int) Math.random() * 0x1000000);
+        Color color = new Color((int) (Math.random() * 0x1000000));
         builder.setColor(color);
         return builder.build();
     }

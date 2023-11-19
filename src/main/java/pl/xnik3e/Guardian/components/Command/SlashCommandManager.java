@@ -16,13 +16,15 @@ public class SlashCommandManager {
                                 new OptionData(OptionType.STRING, "command", "Command name", false)
                                         .addChoice("Help", "help")
                                         .addChoice("Init", "init")
-                                        .addChoice("Toggle prefix", "prefix")
-                                        .addChoice("Toggle mention", "mention")
+                                        .addChoice("Toggle prefix", "p")
+                                        .addChoice("Toggle mention", "m")
                                         .addChoice("Get users with role", "fetch")
                                         .addChoice("Ban users with role", "purge")
                                         .addChoice("Toggle bot response", "tbr")
                                         .addChoice("Delete message trigger", "dt")
-                                        .addChoice("Reset bot", "reset")
+                                        .addChoice("Reset bot", "r")
+                                        .addChoice("Get whitelisted nicknames for User", "wl")
+                                        .addChoice("Blacklist provided nickname id for specific user", "bl")
                         ),
                 Commands.slash("init", "Init the bot")
                         .addOptions(
@@ -45,7 +47,7 @@ public class SlashCommandManager {
                 Commands.slash("reset", "Reset bot"),
                 Commands.slash("whitelist", "Get whitelisted nicknames for User")
                         .addOption(OptionType.USER, "user", "User to get whitelist", true),
-                Commands.slash("blacklist", "Blacklist provided nickname id for specyfic user")
+                Commands.slash("blacklist", "Blacklist provided nickname id for specific user")
                         .addOptions(
                                 new OptionData(OptionType.USER, "user", "User to blacklist nickname", true),
                                 new OptionData(OptionType.STRING, "id", "Nickname id to blacklist or **ALL** to blacklist all", true)
