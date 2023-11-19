@@ -37,6 +37,7 @@ public class CommandManager {
         addCommand(new ResetCommand(messageUtils));
         addCommand(new DeleteTriggerCommand(messageUtils));
         addCommand(new WhitelistCommand(messageUtils));
+        addCommand(new NickBlackListCommand(messageUtils));
     }
 
     private void addCommand(ICommand cmd) {

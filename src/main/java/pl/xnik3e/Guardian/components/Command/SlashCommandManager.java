@@ -44,7 +44,12 @@ public class SlashCommandManager {
                 Commands.slash("dt", "Delete message trigger"),
                 Commands.slash("reset", "Reset bot"),
                 Commands.slash("whitelist", "Get whitelisted nicknames for User")
-                        .addOption(OptionType.USER, "user", "User to get whitelist", true)
+                        .addOption(OptionType.USER, "user", "User to get whitelist", true),
+                Commands.slash("blacklist", "Blacklist provided nickname id for specyfic user")
+                        .addOptions(
+                                new OptionData(OptionType.USER, "user", "User to blacklist nickname", true),
+                                new OptionData(OptionType.STRING, "id", "Nickname id to blacklist or **ALL** to blacklist all", true)
+                        )
         ).queue();
     }
 }

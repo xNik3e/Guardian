@@ -96,6 +96,17 @@ public class SlashCommandInteractionListener extends ListenerAdapter {
                 }
                 manager.handle(event, command.toString());
                 break;
+            case "blacklist":
+                command.append("blacklist");
+                Optional<OptionMapping> optionBlacklistUser = Optional.of(event.getOption("user"));
+                Optional<OptionMapping> optionBlacklistId = Optional.of(event.getOption("id"));
+                if(optionBlacklistUser.isPresent() && optionBlacklistId.isPresent()){
+                    String argumentUser = optionBlacklistUser.get().getAsString();
+                    String argumentId = optionBlacklistId.get().getAsString();
+                    command.append(" ").append(argumentUser).append(" ").append(argumentId);
+                }
+                manager.handle(event, command.toString());
+                break;
             default:
                 event.getHook().sendMessage("Command not found").setEphemeral(true).queue();
 

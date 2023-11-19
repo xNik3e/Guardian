@@ -152,7 +152,6 @@ public class FireStoreService {
     }
 
     public NickNameModel getNickNameModel(String userID){
-        NickNameModel model;
         ApiFuture<DocumentSnapshot> future = firestore.collection("whitelist").document(userID).get();
         try{
            return future.get(5, TimeUnit.SECONDS).toObject(NickNameModel.class);
