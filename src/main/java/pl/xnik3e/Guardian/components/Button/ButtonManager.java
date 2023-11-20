@@ -1,12 +1,12 @@
-package pl.xnik3e.Guardian.components.Buttons;
+package pl.xnik3e.Guardian.components.Button;
 
 import lombok.Getter;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
-import net.dv8tion.jda.api.interactions.components.buttons.ButtonInteraction;
 import org.springframework.stereotype.Component;
 import pl.xnik3e.Guardian.Services.FireStoreService;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
+import pl.xnik3e.Guardian.components.Button.Buttons.ResetButton;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -57,9 +57,10 @@ public class ButtonManager {
             event.deferReply(true).addEmbeds(embed.build()).queue();
             return;
         }
-        Thread thread = new Thread(() -> button.handle(event));
+        new Thread(() -> button.handle(event)).start();
     }
 
     private void addButtons() {
+        addButton(new ResetButton(messageUtils));
     }
 }

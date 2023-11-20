@@ -1,4 +1,4 @@
-package pl.xnik3e.Guardian.components.Buttons;
+package pl.xnik3e.Guardian.components.Button;
 
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 
