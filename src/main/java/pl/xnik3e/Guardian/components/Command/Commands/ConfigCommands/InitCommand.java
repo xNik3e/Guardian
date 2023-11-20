@@ -54,7 +54,7 @@ public class InitCommand implements ICommand {
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setTitle(getTitle());
         embedBuilder.setDescription(getDescription());
-        embedBuilder.addField("Optional arguments", "`ban`, `log`, 'echolog'", false);
+        embedBuilder.addField("Optional arguments", "`ban`, `log`, `echolog`", false);
         embedBuilder.addField("Usage", "`{prefix or mention} init {optional <ban, log or echolog>}`", false);
         embedBuilder.addField("Available aliases", messageUtils.createAliasString(getAliases()), false);
         Color color = new Color((int)(Math.random() * 0x1000000));
