@@ -89,7 +89,7 @@ public class CommandManager {
         if (checkInit(cmd)) {
             List<String> args = Arrays.asList(split).subList(1, split.length);
             CommandContext ctx = new CommandContext(event, args);
-            cmd.handle(ctx);
+            new Thread(() -> cmd.handle(ctx)).start();
         }else{
             User user = event.getAuthor();
             event.getMessage().delete().queue();
@@ -117,7 +117,7 @@ public class CommandManager {
 
         if (checkInit(cmd)) {
             List<String> args = Arrays.asList(split).subList(1, split.length);
-            cmd.handleSlash(event, args);
+            new Thread(() -> cmd.handleSlash(event, args)).start();
         }else{
             User user = event.getUser();
             EmbedBuilder embedBuilder = new EmbedBuilder();
