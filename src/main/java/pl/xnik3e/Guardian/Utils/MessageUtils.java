@@ -81,7 +81,7 @@ public class MessageUtils {
      * @param member Member to check
      * @return true if member has any role included in excludedRoleIds list or matching id in excludedUserIds list, false otherwise
      */
-    private boolean checkAuthority(Member member) {
+    public boolean checkAuthority(Member member) {
         List<String> memberRoles = getMemberRoleList(member);
         return performRolesToExcludeCheck(memberRoles) || configModel
                 .getExcludedUserIds()

@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
 import pl.xnik3e.Guardian.components.Command.Commands.AdminCommands.BanUsersWithRoleCommand;
 import pl.xnik3e.Guardian.components.Command.Commands.AdminCommands.FetchUsersWithRoleCommand;
-import pl.xnik3e.Guardian.components.Command.Commands.BobCommands.BobCommand;
+import pl.xnik3e.Guardian.components.Command.Commands.BobCommands.GetBobCommand;
 import pl.xnik3e.Guardian.components.Command.Commands.BobCommands.BobifyCommand;
 import pl.xnik3e.Guardian.components.Command.Commands.BobCommands.NickBlackListCommand;
 import pl.xnik3e.Guardian.components.Command.Commands.BobCommands.WhitelistCommand;
@@ -139,7 +139,7 @@ public class CommandManager {
         addCommand(new DeleteTriggerCommand(messageUtils));
         addCommand(new WhitelistCommand(messageUtils));
         addCommand(new NickBlackListCommand(messageUtils));
-        addCommand(new BobCommand(messageUtils));
+        addCommand(new GetBobCommand(messageUtils));
         addCommand(new BobifyCommand(messageUtils));
     }
 }

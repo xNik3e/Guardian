@@ -5,7 +5,6 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
-import net.dv8tion.jda.api.interactions.components.LayoutComponent;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
@@ -16,20 +15,16 @@ import pl.xnik3e.Guardian.components.Command.CommandContext;
 import pl.xnik3e.Guardian.components.Command.ICommand;
 
 import java.awt.*;
-import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 
-public class BobCommand implements ICommand {
+public class GetBobCommand implements ICommand {
 
     private final FireStoreService fireStoreService;
     private final MessageUtils messageUtils;
 
-    public BobCommand(MessageUtils messageUtils) {
+    public GetBobCommand(MessageUtils messageUtils) {
         this.messageUtils = messageUtils;
         this.fireStoreService = messageUtils.getFireStoreService();
     }
@@ -112,9 +107,12 @@ public class BobCommand implements ICommand {
                         });
                         embedBuilder.setColor(Color.GREEN);
                         embedBuilder.setFooter("To Bobify specific user use `" + fireStoreService.getModel().getPrefix() + "bobify <userID>` command");
-                        Button button = Button.primary("bobifyall", "Bobify all");
-                        MessageCreateData messageCreateData = new MessageCreateBuilder().addEmbeds(embedBuilder.build()).addActionRow(button).build();
-                        MessageEditBuilder messageEditBuilder = new MessageEditBuilder().applyCreateData(messageCreateData);
+                        MessageCreateBuilder messageCreateBuilder = new MessageCreateBuilder().addEmbeds(embedBuilder.build());
+                        if(!members.isEmpty()){
+                            Button button = Button.primary("bobifyall", "Bobify all");
+                            messageCreateBuilder.addActionRow(button);
+                        }
+                        MessageEditBuilder messageEditBuilder = new MessageEditBuilder().applyCreateData(messageCreateBuilder.build());
                         oryginalMessage.editMessage(messageEditBuilder.build()).queue();
                     }).onError(error -> {
                         embedBuilder.setTitle("Error");

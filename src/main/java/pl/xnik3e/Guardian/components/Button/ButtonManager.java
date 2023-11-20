@@ -37,17 +37,15 @@ public class ButtonManager {
     }
 
     public IButton getButton(String search){
-        String searchLower = search.toLowerCase();
         for (IButton button : this.buttons) {
-            if (button.getValue().equals(searchLower)) {
+            if (button.getValue().equals(search)) {
                 return button;
             }
         }
         return null;
     }
 
-    public void handle(ButtonInteractionEvent event, String value){
-        String invoke = value.toLowerCase();
+    public void handle(ButtonInteractionEvent event, String invoke){
         IButton button = this.getButton(invoke);
         if(button == null){
             EmbedBuilder embed = new EmbedBuilder();

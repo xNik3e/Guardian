@@ -58,8 +58,7 @@ public class MessageCommandListener extends ListenerAdapter {
 
     @Override
     public void onButtonInteraction(@NotNull ButtonInteractionEvent event) {
-        String buttonId = event.getButton().getId();
-        buttonManager.handle(event, Objects.requireNonNull(buttonId));
+        buttonManager.handle(event, Objects.requireNonNull(event.getButton().getId()));
     }
 }
 

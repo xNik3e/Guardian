@@ -29,6 +29,8 @@ public class BobifyAllButton implements IButton {
         embed.getFields().forEach(field -> {
             String UID = field.getValue();
             event.getGuild().retrieveMemberById(UID).queue(member ->{
+                if(messageUtils.checkAuthority(member))
+                    return;
                 NickNameModel model = fireStoreService.getNickNameModel(member.getId());
                 if(model != null){
                     model.getNickName().remove(member.getEffectiveName());
