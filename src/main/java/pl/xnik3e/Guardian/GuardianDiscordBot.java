@@ -1,6 +1,5 @@
 package pl.xnik3e.Guardian;
 
-import com.google.cloud.firestore.Firestore;
 import io.github.cdimascio.dotenv.Dotenv;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -13,7 +12,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import pl.xnik3e.Guardian.Models.EnvironmentModel;
 import pl.xnik3e.Guardian.Services.FireStoreService;
-import pl.xnik3e.Guardian.components.Command.SlashCommandManager;
+import pl.xnik3e.Guardian.components.Command.SlashCommandUpdater;
 import pl.xnik3e.Guardian.listeners.BobNicknameChangeListener;
 import pl.xnik3e.Guardian.listeners.MessageCommandListener;
 import pl.xnik3e.Guardian.listeners.SlashCommandInteractionListener;
@@ -27,16 +26,16 @@ public class GuardianDiscordBot {
     private final MessageCommandListener messageCommandListener;
     private final SlashCommandInteractionListener slashCommandInteractionListener;
     private final BobNicknameChangeListener bobNicknameChangeListener;
-    private final SlashCommandManager slashCommandManager;
+    private final SlashCommandUpdater slashCommandUpdater;
     private final FireStoreService fireStoreService;
 
 
     @Autowired
-    private GuardianDiscordBot(MessageCommandListener messageCommandListener, SlashCommandInteractionListener slashCommandInteractionListener, BobNicknameChangeListener bobNicknameChangeListener, SlashCommandManager slashCommandManager, FireStoreService fireStoreService) {
+    private GuardianDiscordBot(MessageCommandListener messageCommandListener, SlashCommandInteractionListener slashCommandInteractionListener, BobNicknameChangeListener bobNicknameChangeListener, SlashCommandUpdater slashCommandUpdater, FireStoreService fireStoreService) {
         this.messageCommandListener = messageCommandListener;
         this.slashCommandInteractionListener = slashCommandInteractionListener;
         this.bobNicknameChangeListener = bobNicknameChangeListener;
-        this.slashCommandManager = slashCommandManager;
+        this.slashCommandUpdater = slashCommandUpdater;
         this.fireStoreService = fireStoreService;
         try {
             EnvironmentModel eModel = fireStoreService.getEnvironmentModel();
@@ -55,7 +54,7 @@ public class GuardianDiscordBot {
 
             Guild guild = jda.getGuildById(eModel.getGUILD_ID());
             if (guild != null)
-                slashCommandManager.updateSlashCommand(guild);
+                slashCommandUpdater.updateSlashCommand(guild);
 
         } catch (Exception e) {
             System.out.println(e.getMessage());

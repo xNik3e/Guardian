@@ -33,19 +33,7 @@ public class CommandManager {
     @Autowired
     public CommandManager(MessageUtils messageUtils){
         this.messageUtils = messageUtils;
-        addCommand(new FetchUsersWithRoleCommand(messageUtils));
-        addCommand(new InitCommand(messageUtils));
-        addCommand(new TogglePrefixCommand(messageUtils));
-        addCommand(new ToggleMentionCommand(messageUtils));
-        addCommand(new BanUsersWithRoleCommand(messageUtils));
-        addCommand(new HelpCommand(this, messageUtils));
-        addCommand(new ToggleBotResponseCommand(messageUtils));
-        addCommand(new ResetCommand(messageUtils));
-        addCommand(new DeleteTriggerCommand(messageUtils));
-        addCommand(new WhitelistCommand(messageUtils));
-        addCommand(new NickBlackListCommand(messageUtils));
-        addCommand(new BobCommand(messageUtils));
-        addCommand(new BobifyCommand(messageUtils));
+        addCommands();
     }
 
     private void addCommand(ICommand cmd) {
@@ -138,4 +126,20 @@ public class CommandManager {
         return !a || b;
     }
 
+
+    private void addCommands() {
+        addCommand(new FetchUsersWithRoleCommand(messageUtils));
+        addCommand(new InitCommand(messageUtils));
+        addCommand(new TogglePrefixCommand(messageUtils));
+        addCommand(new ToggleMentionCommand(messageUtils));
+        addCommand(new BanUsersWithRoleCommand(messageUtils));
+        addCommand(new HelpCommand(this, messageUtils));
+        addCommand(new ToggleBotResponseCommand(messageUtils));
+        addCommand(new ResetCommand(messageUtils));
+        addCommand(new DeleteTriggerCommand(messageUtils));
+        addCommand(new WhitelistCommand(messageUtils));
+        addCommand(new NickBlackListCommand(messageUtils));
+        addCommand(new BobCommand(messageUtils));
+        addCommand(new BobifyCommand(messageUtils));
+    }
 }
