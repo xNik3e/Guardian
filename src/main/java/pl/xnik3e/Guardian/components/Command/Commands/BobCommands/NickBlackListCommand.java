@@ -11,7 +11,9 @@ import pl.xnik3e.Guardian.components.Command.CommandContext;
 import pl.xnik3e.Guardian.components.Command.ICommand;
 
 import java.awt.*;
+import java.sql.Time;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -117,6 +119,10 @@ public class NickBlackListCommand implements ICommand {
             builder.setTitle("Success");
             builder.setDescription("Deleted all whitelisted nicknames for user with id: " + userID);
             builder.setColor(Color.GREEN);
+            guild.retrieveMemberById(userID).delay(2, TimeUnit.SECONDS).queue(member -> {
+                if(!messageUtils.hasMentionableNickName(member))
+                    messageUtils.bobify(member);
+            });
             messageUtils.respondToUser(ctx, event, builder);
             return;
         }
@@ -132,9 +138,9 @@ public class NickBlackListCommand implements ICommand {
         int index = Integer.parseInt(matcher.group());
         NickNameModel model = fireStoreService.getNickNameModel(userID);
         if(model == null){
-            builder.setTitle("Success");
+            builder.setTitle("Info");
             builder.setDescription("User with id: " + userID + " does not have any whitelisted nicknames");
-            builder.setColor(Color.GREEN);
+            builder.setColor(Color.YELLOW);
             messageUtils.respondToUser(ctx, event, builder);
             return;
         }
@@ -152,10 +158,15 @@ public class NickBlackListCommand implements ICommand {
             fireStoreService.deleteNickNameModel(userID);
         else
             fireStoreService.updateNickModel(model);
-        builder.setTitle("Success");
-        builder.setDescription("Deleted nickname with index: " + index + " for user with id: " + userID);
-        builder.setColor(Color.GREEN);
-        messageUtils.respondToUser(ctx, event, builder);
+        guild.retrieveMemberById(userID).delay(2, TimeUnit.SECONDS).queue(member -> {
+            if(!messageUtils.hasMentionableNickName(member))
+                messageUtils.bobify(member);
+
+            builder.setTitle("Success");
+            builder.setDescription("Deleted nickname with index: " + index + " for user with id: " + userID);
+            builder.setColor(Color.GREEN);
+            messageUtils.respondToUser(ctx, event, builder);
+        });
     }
 
 
