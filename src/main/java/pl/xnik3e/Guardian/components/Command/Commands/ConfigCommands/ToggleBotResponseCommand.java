@@ -49,7 +49,7 @@ public class ToggleBotResponseCommand implements ICommand {
         embedBuilder.setDescription(getDescription());
         embedBuilder.addField("Usage", "`{prefix or mention} togglebotresponse`", false);
         embedBuilder.addField("Example usage", "`" + firestoreService.getModel().getPrefix() + "togglebotresponse`", false);
-        embedBuilder.addField("Available aliases", "`tbr`, `toggleresponse`, `changeresponse`, `changereply`, `togglereply`", false);
+        embedBuilder.addField("Available aliases", messageUtils.createAliasString(getAliases()), false);
         Color color = new Color((int)(Math.random() * 0x1000000));
         embedBuilder.setColor(color);
         return embedBuilder.build();

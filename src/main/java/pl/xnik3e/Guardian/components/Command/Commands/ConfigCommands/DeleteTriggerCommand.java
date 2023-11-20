@@ -50,7 +50,7 @@ public class DeleteTriggerCommand implements ICommand {
         embedBuilder.setDescription(getDescription());
         embedBuilder.addField("Usage", "`{prefix or mention} deletetrigger`", false);
         embedBuilder.addField("Example usage", "`" + fireStoreService.getModel().getPrefix()  + "deletetrigger`", false);
-        embedBuilder.addField("Available aliases", "`dt`, `removetrigger`, `rt`", false);
+        embedBuilder.addField("Available aliases", messageUtils.createAliasString(getAliases()), false);
         embedBuilder.setColor((int)(Math.random() * 0x1000000));
         return embedBuilder.build();
     }

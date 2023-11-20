@@ -58,7 +58,7 @@ public class WhitelistCommand implements ICommand {
                 "`" + fireStoreService.getModel().getPrefix() + "whitelist 1164645019769131029`\n"
                         + "`" + fireStoreService.getModel().getPrefix() + "whitelist @xnik3e`",
                 false);
-        embedBuilder.addField("Available aliases", "`wl`", false);
+        embedBuilder.addField("Available aliases", messageUtils.createAliasString(getAliases()), false);
         Color color = new Color((int) (Math.random() * 0x1000000));
         embedBuilder.setColor(color);
         return embedBuilder.build();

@@ -50,7 +50,7 @@ public class TogglePrefixCommand implements ICommand {
         eBuilder.setDescription(getDescription());
         eBuilder.addField("Usage", "`{prefix} toggleprefix {optional <prefix>}`", false);
         eBuilder.addField("Example usage", "`" + fireStoreService.getModel().getPrefix() + "toggleprefix !`", false);
-        eBuilder.addField("Available aliases", "`prefix`, `p`, `setprefix`, `changeprefix`", false);
+        eBuilder.addField("Available aliases", messageUtils.createAliasString(getAliases()), false);
         Color color = new Color((int) (Math.random() * 0x1000000));
         eBuilder.setColor(color);
         return eBuilder.build();

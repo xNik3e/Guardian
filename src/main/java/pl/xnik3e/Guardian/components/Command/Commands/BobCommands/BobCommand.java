@@ -61,7 +61,7 @@ public class BobCommand implements ICommand {
         embedBuilder.setDescription(getDescription());
         embedBuilder.addField("Usage",
                 "`" + fireStoreService.getModel().getPrefix() + "getbob", false);
-        embedBuilder.addField("Available aliases", "`gb`, `fetchbob`, `fb`", false);
+        embedBuilder.addField("Available aliases", messageUtils.createAliasString(getAliases()), false);
         Color color = new Color((int) (Math.random() * 0x1000000));
         embedBuilder.setColor(color);
         return embedBuilder.build();

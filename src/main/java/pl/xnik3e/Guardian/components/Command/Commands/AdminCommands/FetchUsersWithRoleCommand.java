@@ -53,7 +53,7 @@ public class FetchUsersWithRoleCommand implements ICommand {
         builder.setTitle(getTitle());
         builder.setDescription(getDescription());
         builder.addField("Usage", "`{prefix or mention} getuserswithrole <role id>`", false);
-        builder.addField("Available aliases", "`fetchusers`, `getusers`, `findbyrole`, `fetch`", false);
+        builder.addField("Available aliases", messageUtils.createAliasString(getAliases()), false);
         //get random color
         Color color = new Color((int)(Math.random() * 0x1000000));
         builder.setColor(color);

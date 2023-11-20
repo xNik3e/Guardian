@@ -49,7 +49,7 @@ public class ToggleMentionCommand implements ICommand {
         eBuilder.setDescription(getDescription());
         eBuilder.addField("Usage", "`{prefix} togglemention`", false);
         eBuilder.addField("Example usage", "`" +fireStoreService.getModel().getPrefix() + "togglemention`", false);
-        eBuilder.addField("Available aliases", "`mention`, `m`, `setmention`, `changemention`", false);
+        eBuilder.addField("Available aliases", messageUtils.createAliasString(getAliases()), false);
         Color color = new Color((int)(Math.random() * 0x1000000));
         eBuilder.setColor(color);
         return eBuilder.build();

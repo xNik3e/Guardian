@@ -430,4 +430,21 @@ public class MessageUtils {
             System.err.println("User is higher in hierarchy than bot");
         }
     }
+
+
+    /**
+     * Get list of aliases as String.
+     * <p></p>
+     *
+     * @param aliases
+     * @return String of aliases separated by comma
+     */
+    public String createAliasString(List<String> aliases){
+        return aliases
+                .stream()
+                .map(s -> "`" + s + "`")
+                .reduce((s, s2) -> s + ", " + s2)
+                .orElseGet(() -> "No aliases");
+
+    }
 }

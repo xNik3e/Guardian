@@ -57,7 +57,7 @@ public class NickBlackListCommand implements ICommand {
                 "`" + fireStoreService.getModel().getPrefix() + "blacklist 1164645019769131029 1`\n" +
                         "`" + fireStoreService.getModel().getPrefix() + "blacklist @xnik3e ALL`",
                 false);
-        builder.addField("Available aliases", "`bl`", false);
+        builder.addField("Available aliases", messageUtils.createAliasString(getAliases()), false);
         Color color = new Color((int) (Math.random() * 0x1000000));
         builder.setColor(color);
         return builder.build();

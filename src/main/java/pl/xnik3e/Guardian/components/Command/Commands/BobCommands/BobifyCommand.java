@@ -57,7 +57,7 @@ public class BobifyCommand implements ICommand {
         embedBuilder.addField("Example",
                 "`" + fireStoreService.getModel().getPrefix() + "bobify @xnik3e`", false);
         embedBuilder.addField("Requirements", "User must have non-mentionable nickname", false);
-        embedBuilder.addField("Aliases", "`bob`, `b`", false);
+        embedBuilder.addField("Aliases", messageUtils.createAliasString(getAliases()), false);
         Color color = new Color((int) (Math.random() * 0x1000000));
         embedBuilder.setColor(color);
         return embedBuilder.build();

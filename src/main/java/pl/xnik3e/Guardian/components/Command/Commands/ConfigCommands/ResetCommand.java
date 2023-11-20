@@ -51,7 +51,7 @@ public class ResetCommand implements ICommand {
         embedBuilder.setDescription(getDescription());
         embedBuilder.addField("Usage", "`{prefix or mention} reset`", false);
         embedBuilder.addField("Example usage", "`" + fireStoreService.getModel().getPrefix() + "reset`", false);
-        embedBuilder.addField("Available aliases", "`resetbot`, `usedefaults`, `factoryreset`, `rollback`, `r`", false);
+        embedBuilder.addField("Available aliases", messageUtils.createAliasString(getAliases()), false);
         return embedBuilder.build();
     }
 

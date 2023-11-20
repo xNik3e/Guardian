@@ -58,7 +58,7 @@ public class BanUsersWithRoleCommand implements ICommand {
                 "`" + fireStoreService.getModel().getPrefix() + "banuserswithrole 1164645019769131029`",
                 false);
         builder.addField("Available aliases",
-                "`banusers`, `banbyrole`, `purge`, `banall`, `banrole`",
+                messageUtils.createAliasString(getAliases()),
                 false);
         Color color = new Color((int)(Math.random() * 0x1000000));
         builder.setColor(color);
