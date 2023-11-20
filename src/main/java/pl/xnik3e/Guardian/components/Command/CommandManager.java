@@ -8,7 +8,13 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
-import pl.xnik3e.Guardian.components.Command.Commands.*;
+import pl.xnik3e.Guardian.components.Command.Commands.AdminCommands.BanUsersWithRoleCommand;
+import pl.xnik3e.Guardian.components.Command.Commands.AdminCommands.FetchUsersWithRoleCommand;
+import pl.xnik3e.Guardian.components.Command.Commands.BobCommands.BobCommand;
+import pl.xnik3e.Guardian.components.Command.Commands.BobCommands.BobifyCommand;
+import pl.xnik3e.Guardian.components.Command.Commands.BobCommands.NickBlackListCommand;
+import pl.xnik3e.Guardian.components.Command.Commands.BobCommands.WhitelistCommand;
+import pl.xnik3e.Guardian.components.Command.Commands.ConfigCommands.*;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
