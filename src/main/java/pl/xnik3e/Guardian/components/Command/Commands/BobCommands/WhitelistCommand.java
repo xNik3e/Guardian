@@ -110,7 +110,7 @@ public class WhitelistCommand implements ICommand {
                     .forEachOrdered(stringBuilder::append);
             eBuilder.setTitle("Whitelisted nicknames for user " + member.getEffectiveName());
             eBuilder.setDescription(stringBuilder.toString().isEmpty() ? "No whitelisted nicknames found" : stringBuilder.toString());
-            eBuilder.setColor(Color.GREEN);
+            eBuilder.setColor(stringBuilder.toString().isEmpty() ? Color.YELLOW : Color.GREEN);
             messageUtils.respondToUser(ctx, event, eBuilder);
         }, error -> {
             eBuilder.setTitle("An error occurred");
