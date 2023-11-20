@@ -90,13 +90,13 @@ public class WhitelistCommand implements ICommand {
             eBuilder.setTitle("An error occurred");
             eBuilder.setDescription("Please provide valid user id or mention");
             eBuilder.setColor(Color.RED);
-            respondToUser(ctx, event, eBuilder);
+            messageUtils.respondToUser(ctx, event, eBuilder);
             return;
         }
         Matcher matcher = Pattern.compile("\\d+")
                 .matcher(args.get(0));
         if (!matcher.find()) {
-            respondToUser(ctx, event, eBuilder);
+            messageUtils.respondToUser(ctx, event, eBuilder);
             return;
         }
         String userId = matcher.group();
@@ -111,19 +111,14 @@ public class WhitelistCommand implements ICommand {
             eBuilder.setTitle("Whitelisted nicknames for user " + member.getEffectiveName());
             eBuilder.setDescription(stringBuilder.toString().isEmpty() ? "No whitelisted nicknames found" : stringBuilder.toString());
             eBuilder.setColor(Color.GREEN);
-            respondToUser(ctx, event, eBuilder);
+            messageUtils.respondToUser(ctx, event, eBuilder);
         }, error -> {
             eBuilder.setTitle("An error occurred");
             eBuilder.setDescription("Please provide valid user id or mention");
             eBuilder.setColor(Color.RED);
-            respondToUser(ctx, event, eBuilder);
+            messageUtils.respondToUser(ctx, event, eBuilder);
         });
     }
 
-    private void respondToUser(CommandContext ctx, SlashCommandInteractionEvent event, EmbedBuilder eBuilder) {
-        if (ctx != null)
-            messageUtils.respondToUser(ctx, eBuilder.build());
-        else
-            event.getHook().sendMessageEmbeds(eBuilder.build()).setEphemeral(true).queue();
-    }
+
 }

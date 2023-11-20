@@ -96,13 +96,13 @@ public class BanUsersWithRoleCommand implements ICommand {
             eBuilder.setColor(Color.RED);
 
             if (!matcher.find()) {
-                respondToUser(ctx, event, eBuilder);
+                messageUtils.respondToUser(ctx, event, eBuilder);
                 return;
             }
             String roleId = matcher.group(0);
             Role role = guild.getRoleById(roleId);
             if (role == null || role.isPublicRole()) {
-                respondToUser(ctx, event, eBuilder);
+                messageUtils.respondToUser(ctx, event, eBuilder);
                 return;
             }
 
@@ -112,7 +112,7 @@ public class BanUsersWithRoleCommand implements ICommand {
                 eBuilder.setDescription("Hey! Only users with granted permissions can choose different role to ban\n" +
                         "Try using the command without an argument to purge default role");
                 eBuilder.setColor(Color.RED);
-                respondToUser(ctx, event, eBuilder);
+                messageUtils.respondToUser(ctx, event, eBuilder);
                 return;
             }
             banExactRole(event, guild, role, eBuilder);
@@ -123,7 +123,7 @@ public class BanUsersWithRoleCommand implements ICommand {
                 eBuilder.setTitle("An error occurred");
                 eBuilder.setDescription("Please provide valid role id or mention");
                 eBuilder.setColor(Color.RED);
-                respondToUser(ctx, event, eBuilder);
+                messageUtils.respondToUser(ctx, event, eBuilder);
                 return;
             }
             banExactRole(event, guild, role, eBuilder);
@@ -150,11 +150,4 @@ public class BanUsersWithRoleCommand implements ICommand {
         });
     }
 
-
-    private void respondToUser(CommandContext ctx, SlashCommandInteractionEvent event, EmbedBuilder eBuilder) {
-        if(ctx != null)
-            messageUtils.respondToUser(ctx, eBuilder.build());
-        else
-            event.getHook().sendMessageEmbeds(eBuilder.build()).setEphemeral(true).queue();
-    }
 }

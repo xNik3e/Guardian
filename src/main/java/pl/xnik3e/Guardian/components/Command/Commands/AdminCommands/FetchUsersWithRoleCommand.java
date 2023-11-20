@@ -87,7 +87,7 @@ public class FetchUsersWithRoleCommand implements ICommand {
             if(!matcher.find()){
                 eBuilder.setDescription("Please provide valid role id or mention");
                 eBuilder.setColor(Color.RED);
-                respondToUser(ctx, event, eBuilder);
+                messageUtils.respondToUser(ctx, event, eBuilder);
                 return;
             }
             String roleId = matcher.group(0);
@@ -95,7 +95,7 @@ public class FetchUsersWithRoleCommand implements ICommand {
             if(role == null){
                 eBuilder.setDescription("Please provide valid role id or mention");
                 eBuilder.setColor(Color.RED);
-                respondToUser(ctx, event, eBuilder);
+                messageUtils.respondToUser(ctx, event, eBuilder);
                 return;
             }
             Task<List<Member>> task = guild.findMembersWithRoles(role);
@@ -108,21 +108,16 @@ public class FetchUsersWithRoleCommand implements ICommand {
 
                 });
                 eBuilder.setColor(Color.GREEN);
-                respondToUser(ctx, event, eBuilder);
+                messageUtils.respondToUser(ctx, event, eBuilder);
             });
         }else{
             eBuilder.setDescription("You should only provide single role Id or role mention");
             eBuilder.setColor(Color.RED);
-            respondToUser(ctx, event, eBuilder);
+            messageUtils.respondToUser(ctx, event, eBuilder);
         }
     }
 
 
 
-    private void respondToUser(@Nullable CommandContext ctx, @Nullable SlashCommandInteractionEvent event, EmbedBuilder eBuilder) {
-        if(ctx != null)
-            messageUtils.respondToUser(ctx, eBuilder.build());
-        else
-            Objects.requireNonNull(event).getHook().sendMessageEmbeds(eBuilder.build()).setEphemeral(true).queue();
-    }
+
 }

@@ -5,6 +5,7 @@ import lombok.NonNull;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
@@ -45,25 +46,6 @@ public class MessageUtils {
     }
 
     /**
-     * Checks if member has any role included in rolesToDelete list.
-     * If the user has granted special privileges, the method returns false.
-     * <p>
-     * Privileges are defined as merged list of excludedRoleIds and excludedUserIds.
-     * <p>
-     *
-     * @param member Member to check
-     * @return true if member has any role included in rolesToDelete list, false otherwise
-     */
-    public boolean checkRolesToDelete(Member member) {
-        if (checkAuthority(member))
-            return false;
-
-        List<String> memberRoles = getMemberRoleList(member);
-        return performRolesToDeleteCheck(memberRoles);
-    }
-
-
-    /**
      * Get list of member roles as String
      * <p></p>
      *
@@ -76,19 +58,6 @@ public class MessageUtils {
                 .stream()
                 .map(Role::getIdLong)
                 .map(String::valueOf).toList();
-    }
-
-    /**
-     * Perform list search for rolesToDelete
-     * <p></p>
-     *
-     * @param userRoles List of user roles
-     * @return true if member has any role included in rolesToDelete list, false otherwise
-     */
-    private boolean performRolesToDeleteCheck(List<String> userRoles) {
-        List<String> rolesToDelete = configModel
-                .getRolesToDelete();
-        return userRoles.stream().anyMatch(rolesToDelete::contains);
     }
 
 
@@ -254,6 +223,21 @@ public class MessageUtils {
         } else {
             return ctx.getMessage().reply(message).submit();
         }
+    }
+
+    /**
+     * Sends message to user in private channel or in channel where command was invoked.
+     * <p></p>
+     *
+     * @param ctx CommandContext to get member from
+     * @param event SlashCommandInteractionEvent to get hook from
+     * @param eBuilder Message to send in form of EmbedBuilder
+     */
+    public CompletableFuture<Message> respondToUser(CommandContext ctx, SlashCommandInteractionEvent event, EmbedBuilder eBuilder) {
+        if(ctx != null)
+            return respondToUser(ctx, eBuilder.build());
+        else
+            return event.getHook().sendMessageEmbeds(eBuilder.build()).setEphemeral(true).submit();
     }
 
 

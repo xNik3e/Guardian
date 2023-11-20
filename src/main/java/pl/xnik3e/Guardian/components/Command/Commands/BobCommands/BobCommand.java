@@ -95,12 +95,12 @@ public class BobCommand implements ICommand {
         defaultEmbedBuilder.addField("On success", "I will edit this message when list is ready", false);
         defaultEmbedBuilder.setColor(Color.YELLOW);
         try {
-            Message oryginalMessage = respondToUser(ctx, event, defaultEmbedBuilder).get(5, TimeUnit.SECONDS);
+            Message oryginalMessage = messageUtils.respondToUser(ctx, event, defaultEmbedBuilder).get(5, TimeUnit.SECONDS);
             if (!args.isEmpty()) {
                 embedBuilder.setTitle("Error");
                 embedBuilder.setDescription("This command doesn't take any arguments");
                 embedBuilder.setColor(Color.RED);
-                respondToUser(ctx, event, embedBuilder);
+                messageUtils.respondToUser(ctx, event, embedBuilder);
                 return;
             }
             embedBuilder.setTitle("Bob list");
@@ -127,10 +127,4 @@ public class BobCommand implements ICommand {
         }
     }
 
-    private CompletableFuture<Message> respondToUser(CommandContext ctx, SlashCommandInteractionEvent event, EmbedBuilder eBuilder) {
-        if (ctx != null)
-            return messageUtils.respondToUser(ctx, eBuilder.build());
-        else
-            return event.getHook().sendMessageEmbeds(eBuilder.build()).setEphemeral(true).submit();
-    }
 }
