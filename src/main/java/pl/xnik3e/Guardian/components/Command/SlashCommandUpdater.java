@@ -7,7 +7,7 @@ import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import org.springframework.stereotype.Component;
 
 @Component
-public class SlashCommandManager {
+public class SlashCommandUpdater {
 
     public void updateSlashCommand(Guild guild) {
         guild.updateCommands().addCommands(

@@ -5,6 +5,7 @@ import lombok.NonNull;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
@@ -45,25 +46,6 @@ public class MessageUtils {
     }
 
     /**
-     * Checks if member has any role included in rolesToDelete list.
-     * If the user has granted special privileges, the method returns false.
-     * <p>
-     * Privileges are defined as merged list of excludedRoleIds and excludedUserIds.
-     * <p>
-     *
-     * @param member Member to check
-     * @return true if member has any role included in rolesToDelete list, false otherwise
-     */
-    public boolean checkRolesToDelete(Member member) {
-        if (checkAuthority(member))
-            return false;
-
-        List<String> memberRoles = getMemberRoleList(member);
-        return performRolesToDeleteCheck(memberRoles);
-    }
-
-
-    /**
      * Get list of member roles as String
      * <p></p>
      *
@@ -76,19 +58,6 @@ public class MessageUtils {
                 .stream()
                 .map(Role::getIdLong)
                 .map(String::valueOf).toList();
-    }
-
-    /**
-     * Perform list search for rolesToDelete
-     * <p></p>
-     *
-     * @param userRoles List of user roles
-     * @return true if member has any role included in rolesToDelete list, false otherwise
-     */
-    private boolean performRolesToDeleteCheck(List<String> userRoles) {
-        List<String> rolesToDelete = configModel
-                .getRolesToDelete();
-        return userRoles.stream().anyMatch(rolesToDelete::contains);
     }
 
 
@@ -112,7 +81,7 @@ public class MessageUtils {
      * @param member Member to check
      * @return true if member has any role included in excludedRoleIds list or matching id in excludedUserIds list, false otherwise
      */
-    private boolean checkAuthority(Member member) {
+    public boolean checkAuthority(Member member) {
         List<String> memberRoles = getMemberRoleList(member);
         return performRolesToExcludeCheck(memberRoles) || configModel
                 .getExcludedUserIds()
@@ -256,6 +225,21 @@ public class MessageUtils {
         }
     }
 
+    /**
+     * Sends message to user in private channel or in channel where command was invoked.
+     * <p></p>
+     *
+     * @param ctx CommandContext to get member from
+     * @param event SlashCommandInteractionEvent to get hook from
+     * @param eBuilder Message to send in form of EmbedBuilder
+     */
+    public CompletableFuture<Message> respondToUser(CommandContext ctx, SlashCommandInteractionEvent event, EmbedBuilder eBuilder) {
+        if(ctx != null)
+            return respondToUser(ctx, eBuilder.build());
+        else
+            return event.getHook().sendMessageEmbeds(eBuilder.build()).setEphemeral(true).submit();
+    }
+
 
     /**
      * Get raw command content from MessageReceivedEvent when command is invoked.
@@ -291,22 +275,22 @@ public class MessageUtils {
         MessageChannel echoChannel = guild.getChannelById(MessageChannel.class, fireStoreService.getModel().getChannelIdToSendEchoLog());
 
         toBeBannedIds.forEach(id -> {
-                    Member member = guild.getMemberById(id);
-                    tempBanUser(member.getUser(), channel, guild, 365, TimeUnit.DAYS, "Niespełnianie wymagań wiekowych");
-
-                    StringBuilder sb = new StringBuilder();
-                    sb
-                            .append("<@")
-                            .append(id)
-                            .append("> - ")
-                            .append(member.getUser().getName())
-                            .append(" - ")
-                            .append("tempban rok")
-                            .append(" - ").append("niespełnianie wymagań wiekowych");
-                    if (logChannel != null)
-                        logChannel.sendMessage(sb.toString()).queue();
-                    if (echoChannel != null)
-                        echoChannel.sendMessage(sb.toString()).queue();
+                    guild.retrieveMemberById(id).queue(member -> {
+                        tempBanUser(member.getUser(), channel, guild, 365, TimeUnit.DAYS, "Niespełnianie wymagań wiekowych");
+                        StringBuilder sb = new StringBuilder();
+                        sb
+                                .append("<@")
+                                .append(id)
+                                .append("> - ")
+                                .append(member.getUser().getName())
+                                .append(" - ")
+                                .append("tempban rok")
+                                .append(" - ").append("niespełnianie wymagań wiekowych");
+                        if (logChannel != null)
+                            logChannel.sendMessage(sb.toString()).queue();
+                        if (echoChannel != null)
+                            echoChannel.sendMessage(sb.toString()).queue();
+                    });
                 }
         );
     }
@@ -429,5 +413,22 @@ public class MessageUtils {
         }catch(Exception e){
             System.err.println("User is higher in hierarchy than bot");
         }
+    }
+
+
+    /**
+     * Get list of aliases as String.
+     * <p></p>
+     *
+     * @param aliases
+     * @return String of aliases separated by comma
+     */
+    public String createAliasString(List<String> aliases){
+        return aliases
+                .stream()
+                .map(s -> "`" + s + "`")
+                .reduce((s, s2) -> s + ", " + s2)
+                .orElseGet(() -> "No aliases");
+
     }
 }

@@ -1,4 +1,4 @@
-package pl.xnik3e.Guardian.components.Command.Commands;
+package pl.xnik3e.Guardian.components.Command.Commands.BobCommands;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
@@ -11,7 +11,9 @@ import pl.xnik3e.Guardian.components.Command.CommandContext;
 import pl.xnik3e.Guardian.components.Command.ICommand;
 
 import java.awt.*;
+import java.sql.Time;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -57,7 +59,7 @@ public class NickBlackListCommand implements ICommand {
                 "`" + fireStoreService.getModel().getPrefix() + "blacklist 1164645019769131029 1`\n" +
                         "`" + fireStoreService.getModel().getPrefix() + "blacklist @xnik3e ALL`",
                 false);
-        builder.addField("Available aliases", "`bl`", false);
+        builder.addField("Available aliases", messageUtils.createAliasString(getAliases()), false);
         Color color = new Color((int) (Math.random() * 0x1000000));
         builder.setColor(color);
         return builder.build();
@@ -89,7 +91,7 @@ public class NickBlackListCommand implements ICommand {
             builder.setTitle("Error");
             builder.setDescription("You need to provide user id and nickname index");
             builder.setColor(Color.RED);
-            respondToUser(ctx, event, builder);
+            messageUtils.respondToUser(ctx, event, builder);
             return;
         }
         if (args.size() != 2) {
@@ -98,7 +100,7 @@ public class NickBlackListCommand implements ICommand {
             builder.addField("User", "User id or mention", false);
             builder.addField("Nickname index", "Index of nickname to blacklist or **ALL** if you want to delete all whitelisted roles", false);
             builder.setColor(Color.RED);
-            respondToUser(ctx, event, builder);
+            messageUtils.respondToUser(ctx, event, builder);
             return;
         }
         Matcher matcher = Pattern.compile("\\d+")
@@ -107,7 +109,7 @@ public class NickBlackListCommand implements ICommand {
             builder.setTitle("Error");
             builder.setDescription("Please provide valid user id");
             builder.setColor(Color.RED);
-            respondToUser(ctx, event, builder);
+            messageUtils.respondToUser(ctx, event, builder);
             return;
         }
         String userID = matcher.group();
@@ -117,7 +119,11 @@ public class NickBlackListCommand implements ICommand {
             builder.setTitle("Success");
             builder.setDescription("Deleted all whitelisted nicknames for user with id: " + userID);
             builder.setColor(Color.GREEN);
-            respondToUser(ctx, event, builder);
+            guild.retrieveMemberById(userID).delay(2, TimeUnit.SECONDS).queue(member -> {
+                if(!messageUtils.hasMentionableNickName(member))
+                    messageUtils.bobify(member);
+            });
+            messageUtils.respondToUser(ctx, event, builder);
             return;
         }
         matcher = Pattern.compile("\\d+")
@@ -126,16 +132,16 @@ public class NickBlackListCommand implements ICommand {
             builder.setTitle("Error");
             builder.setDescription("Please provide valid nickname index or type **ALL**");
             builder.setColor(Color.RED);
-            respondToUser(ctx, event, builder);
+            messageUtils.respondToUser(ctx, event, builder);
             return;
         }
         int index = Integer.parseInt(matcher.group());
         NickNameModel model = fireStoreService.getNickNameModel(userID);
         if(model == null){
-            builder.setTitle("Success");
+            builder.setTitle("Info");
             builder.setDescription("User with id: " + userID + " does not have any whitelisted nicknames");
-            builder.setColor(Color.GREEN);
-            respondToUser(ctx, event, builder);
+            builder.setColor(Color.YELLOW);
+            messageUtils.respondToUser(ctx, event, builder);
             return;
         }
 
@@ -143,7 +149,7 @@ public class NickBlackListCommand implements ICommand {
             builder.setTitle("Error");
             builder.setDescription("User with id: " + userID + " does not have nickname with index: " + index);
             builder.setColor(Color.RED);
-            respondToUser(ctx, event, builder);
+            messageUtils.respondToUser(ctx, event, builder);
             return;
         }
 
@@ -152,17 +158,17 @@ public class NickBlackListCommand implements ICommand {
             fireStoreService.deleteNickNameModel(userID);
         else
             fireStoreService.updateNickModel(model);
-        builder.setTitle("Success");
-        builder.setDescription("Deleted nickname with index: " + index + " for user with id: " + userID);
-        builder.setColor(Color.GREEN);
-        respondToUser(ctx, event, builder);
+        guild.retrieveMemberById(userID).delay(2, TimeUnit.SECONDS).queue(member -> {
+            if(!messageUtils.hasMentionableNickName(member))
+                messageUtils.bobify(member);
+
+            builder.setTitle("Success");
+            builder.setDescription("Deleted nickname with index: " + index + " for user with id: " + userID);
+            builder.setColor(Color.GREEN);
+            messageUtils.respondToUser(ctx, event, builder);
+        });
     }
 
 
-    private void respondToUser(CommandContext ctx, SlashCommandInteractionEvent event, EmbedBuilder eBuilder) {
-        if (ctx != null)
-            messageUtils.respondToUser(ctx, eBuilder.build());
-        else
-            event.getHook().sendMessageEmbeds(eBuilder.build()).setEphemeral(true).queue();
-    }
+
 }

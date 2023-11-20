@@ -1,4 +1,4 @@
-package pl.xnik3e.Guardian.components.Command.Commands;
+package pl.xnik3e.Guardian.components.Command.Commands.ConfigCommands;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
@@ -54,9 +54,9 @@ public class InitCommand implements ICommand {
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setTitle(getTitle());
         embedBuilder.setDescription(getDescription());
-        embedBuilder.addField("Optional arguments", "`ban`, `log`, 'echolog'", false);
+        embedBuilder.addField("Optional arguments", "`ban`, `log`, `echolog`", false);
         embedBuilder.addField("Usage", "`{prefix or mention} init {optional <ban, log or echolog>}`", false);
-        embedBuilder.addField("Available aliases", "`i`, `setup`", false);
+        embedBuilder.addField("Available aliases", messageUtils.createAliasString(getAliases()), false);
         Color color = new Color((int)(Math.random() * 0x1000000));
         embedBuilder.setColor(color);
         return embedBuilder.build();
@@ -95,14 +95,14 @@ public class InitCommand implements ICommand {
                         embedBuilder.setDescription("Setting up the ban utility for channel: **"
                                 + channel.getName() +"**");
                         embedBuilder.setColor(Color.GREEN);
-                        replyToUser(ctx, event, embedBuilder);
+                        messageUtils.respondToUser(ctx, event, embedBuilder);
                     } else {
                         embedBuilder.setTitle("Ban channel changed");
                         embedBuilder.setDescription("Setting up the ban utility for channel: **"
                                 + channel.getName() + "**"
                                 + "\nPrevious channel was: **" + guild.getChannelById(Channel.class, previousChannel).getName() +"**");
                         embedBuilder.setColor(Color.GREEN);
-                        replyToUser(ctx, event, embedBuilder);
+                        messageUtils.respondToUser(ctx, event, embedBuilder);
                     }
                     model.setInit(true);
                     fireStoreService.updateConfigModel();
@@ -115,14 +115,14 @@ public class InitCommand implements ICommand {
                         embedBuilder.setDescription("Setting up the log utility for channel: **"
                                 + channel.getName() +"**");
                         embedBuilder.setColor(Color.GREEN);
-                        replyToUser(ctx, event, embedBuilder);
+                        messageUtils.respondToUser(ctx, event, embedBuilder);
                     } else {
                         embedBuilder.setTitle("Log channel changed");
                         embedBuilder.setDescription("Setting up the log utility for channel: **"
                                 + channel.getName() + "**"
                                 + "\nPrevious channel was: **" + guild.getChannelById(Channel.class, previousLogChannel).getName() +"**");
                         embedBuilder.setColor(Color.GREEN);
-                        replyToUser(ctx, event, embedBuilder);
+                        messageUtils.respondToUser(ctx, event, embedBuilder);
                     }
                     fireStoreService.updateConfigModel();
                     break;
@@ -134,7 +134,7 @@ public class InitCommand implements ICommand {
                         embedBuilder.setDescription("Setting up the echo log utility for channel: **"
                                 + channel.getName() +"**");
                         embedBuilder.setColor(Color.GREEN);
-                        replyToUser(ctx, event, embedBuilder);
+                        messageUtils.respondToUser(ctx, event, embedBuilder);
                     }else{
                         embedBuilder.setTitle("Echo Log channel changed");
                         embedBuilder.setDescription("Setting up the echo log utility for channel: **"
@@ -149,7 +149,7 @@ public class InitCommand implements ICommand {
                     embedBuilder.setDescription("Invalid argument");
                     embedBuilder.addField("Valid arguments", "`ban`, `log`", false);
                     embedBuilder.setColor(Color.RED);
-                    replyToUser(ctx, event, embedBuilder);
+                    messageUtils.respondToUser(ctx, event, embedBuilder);
                     break;
             }
         } else {
@@ -178,14 +178,9 @@ public class InitCommand implements ICommand {
             embedBuilder.addField("Echo log command", echoLogMessage.toString(), false);
             embedBuilder.addField("Aliases", "You can always use a command aliases listed in help command", false);
             embedBuilder.setColor((int)(Math.random() * 0x1000000));
-            replyToUser(ctx, event, embedBuilder);
+            messageUtils.respondToUser(ctx, event, embedBuilder);
         }
     }
 
-    private void replyToUser(CommandContext ctx, SlashCommandInteractionEvent event, EmbedBuilder embedBuilder) {
-        if(ctx != null)
-            messageUtils.respondToUser(ctx, embedBuilder.build());
-        else
-            event.getHook().sendMessageEmbeds(embedBuilder.build()).setEphemeral(true).queue();
-    }
+
 }

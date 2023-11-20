@@ -1,4 +1,4 @@
-package pl.xnik3e.Guardian.components.Command.Commands;
+package pl.xnik3e.Guardian.components.Command.Commands.AdminCommands;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.*;
@@ -28,7 +28,7 @@ public class BanUsersWithRoleCommand implements ICommand {
     @Override
     public void handle(CommandContext ctx) {
         boolean deleteTriggerMessage = fireStoreService.getModel().isDeleteTriggerMessage();
-        if(deleteTriggerMessage)
+        if (deleteTriggerMessage)
             ctx.getMessage().delete().queue();
         Guild guild = ctx.getGuild();
         List<String> args = ctx.getArgs();
@@ -58,9 +58,9 @@ public class BanUsersWithRoleCommand implements ICommand {
                 "`" + fireStoreService.getModel().getPrefix() + "banuserswithrole 1164645019769131029`",
                 false);
         builder.addField("Available aliases",
-                "`banusers`, `banbyrole`, `purge`, `banall`, `banrole`",
+                messageUtils.createAliasString(getAliases()),
                 false);
-        Color color = new Color((int)(Math.random() * 0x1000000));
+        Color color = new Color((int) (Math.random() * 0x1000000));
         builder.setColor(color);
         return builder.build();
     }
@@ -96,41 +96,45 @@ public class BanUsersWithRoleCommand implements ICommand {
             eBuilder.setColor(Color.RED);
 
             if (!matcher.find()) {
-                respondToUser(ctx, event, eBuilder);
+                messageUtils.respondToUser(ctx, event, eBuilder);
                 return;
             }
             String roleId = matcher.group(0);
             Role role = guild.getRoleById(roleId);
             if (role == null || role.isPublicRole()) {
-                respondToUser(ctx, event, eBuilder);
+                messageUtils.respondToUser(ctx, event, eBuilder);
                 return;
             }
-
-            User user = event.getUser();
-            if(!fireStoreService.getModel().getExcludedUserIds().contains(user.getId())){
+            User user;
+            if (event != null)
+                user = event.getUser();
+            else {
+                user = ctx.getAuthor();
+            }
+            if (!fireStoreService.getModel().getExcludedUserIds().contains(user.getId())) {
                 eBuilder.setTitle("Missing permissions");
                 eBuilder.setDescription("Hey! Only users with granted permissions can choose different role to ban\n" +
                         "Try using the command without an argument to purge default role");
                 eBuilder.setColor(Color.RED);
-                respondToUser(ctx, event, eBuilder);
+                messageUtils.respondToUser(ctx, event, eBuilder);
                 return;
             }
-            banExactRole(event, guild, role, eBuilder);
-        }else{
+            banExactRole(ctx, event, guild, role, eBuilder);
+        } else {
             String roleToDelete = fireStoreService.getModel().getRolesToDelete().get(0);
             Role role = guild.getRoleById(roleToDelete);
             if (role == null) {
                 eBuilder.setTitle("An error occurred");
                 eBuilder.setDescription("Please provide valid role id or mention");
                 eBuilder.setColor(Color.RED);
-                respondToUser(ctx, event, eBuilder);
+                messageUtils.respondToUser(ctx, event, eBuilder);
                 return;
             }
-            banExactRole(event, guild, role, eBuilder);
+            banExactRole(ctx, event, guild, role, eBuilder);
         }
     }
 
-    private void banExactRole(SlashCommandInteractionEvent event, Guild guild, Role role, EmbedBuilder eBuilder) {
+    private void banExactRole(CommandContext ctx, SlashCommandInteractionEvent event, Guild guild, Role role, EmbedBuilder eBuilder) {
         Task<List<Member>> task = guild.findMembersWithRoles(role);
 
         task.onSuccess(members -> {
@@ -139,22 +143,11 @@ public class BanUsersWithRoleCommand implements ICommand {
                 if (messageUtils.performMemberCheck(member)) return;
                 toBeBannedIds.add(member.getUser().getId());
             });
-            if(event != null)
-                event.getHook().sendMessageEmbeds(
-                        eBuilder.setTitle("Banning users")
-                                .setDescription("Banning users with role: **" + role.getName() + "**")
-                                .setColor(Color.GREEN)
-                                .build()
-                ).setEphemeral(true).queue();
+            messageUtils.respondToUser(ctx, event,  eBuilder.setTitle("Banning users")
+                    .setDescription("Banning users with role: **" + role.getName() + "**")
+                    .setColor(Color.GREEN));
             messageUtils.banUsers(toBeBannedIds, guild);
         });
     }
 
-
-    private void respondToUser(CommandContext ctx, SlashCommandInteractionEvent event, EmbedBuilder eBuilder) {
-        if(ctx != null)
-            messageUtils.respondToUser(ctx, eBuilder.build());
-        else
-            event.getHook().sendMessageEmbeds(eBuilder.build()).setEphemeral(true).queue();
-    }
 }

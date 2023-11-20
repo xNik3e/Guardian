@@ -1,4 +1,4 @@
-package pl.xnik3e.Guardian.components.Command.Commands;
+package pl.xnik3e.Guardian.components.Command.Commands.ConfigCommands;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
@@ -12,12 +12,12 @@ import pl.xnik3e.Guardian.components.Command.ICommand;
 import java.awt.*;
 import java.util.List;
 
-public class ToggleMentionCommand implements ICommand {
+public class TogglePrefixCommand implements ICommand {
 
-    private final MessageUtils messageUtils;
-    private final FireStoreService fireStoreService;
+    public final FireStoreService fireStoreService;
+    public final MessageUtils messageUtils;
 
-    public ToggleMentionCommand(MessageUtils messageUtils) {
+    public TogglePrefixCommand(MessageUtils messageUtils) {
         this.messageUtils = messageUtils;
         this.fireStoreService = messageUtils.getFireStoreService();
     }
@@ -27,19 +27,20 @@ public class ToggleMentionCommand implements ICommand {
         boolean deleteTriggerMessage = fireStoreService.getModel().isDeleteTriggerMessage();
         if(deleteTriggerMessage)
             ctx.getMessage().delete().queue();
-        EmbedBuilder eBuilder = getEmbedBuilder();
+        List<String> args = ctx.getArgs();
+        EmbedBuilder eBuilder = getEmbedBuilder(args);
         messageUtils.respondToUser(ctx, eBuilder.build());
     }
 
     @Override
     public void handleSlash(SlashCommandInteractionEvent event, List<String> args) {
-        EmbedBuilder eBuilder = getEmbedBuilder();
+        EmbedBuilder eBuilder = getEmbedBuilder(args);
         event.getHook().sendMessageEmbeds(eBuilder.build()).setEphemeral(true).queue();
     }
 
     @Override
     public String getName() {
-        return "togglemention";
+        return "toggleprefix";
     }
 
     @Override
@@ -47,22 +48,22 @@ public class ToggleMentionCommand implements ICommand {
         EmbedBuilder eBuilder = new EmbedBuilder();
         eBuilder.setTitle(getTitle());
         eBuilder.setDescription(getDescription());
-        eBuilder.addField("Usage", "`{prefix} togglemention`", false);
-        eBuilder.addField("Example usage", "`" +fireStoreService.getModel().getPrefix() + "togglemention`", false);
-        eBuilder.addField("Available aliases", "`mention`, `m`, `setmention`, `changemention`", false);
-        Color color = new Color((int)(Math.random() * 0x1000000));
+        eBuilder.addField("Usage", "`{prefix} toggleprefix {optional <prefix>}`", false);
+        eBuilder.addField("Example usage", "`" + fireStoreService.getModel().getPrefix() + "toggleprefix !`", false);
+        eBuilder.addField("Available aliases", messageUtils.createAliasString(getAliases()), false);
+        Color color = new Color((int) (Math.random() * 0x1000000));
         eBuilder.setColor(color);
         return eBuilder.build();
     }
 
     @Override
     public String getDescription() {
-        return "Set bot to respond by mention";
+        return "Set bot to respond by prefix";
     }
 
     @Override
     public String getTitle() {
-        return "Toggle mention";
+        return "Toggle prefix";
     }
 
     @Override
@@ -72,16 +73,22 @@ public class ToggleMentionCommand implements ICommand {
 
     @Override
     public List<String> getAliases() {
-        return List.of("mention", "m", "setmention", "changemention");
+        return List.of("prefix", "p", "setprefix", "changeprefix");
     }
 
     @NotNull
-    private EmbedBuilder getEmbedBuilder() {
-        fireStoreService.getModel().setRespondByPrefix(false);
-        fireStoreService.updateConfigModel();
+    private EmbedBuilder getEmbedBuilder(List<String> args) {
+        fireStoreService.getModel().setRespondByPrefix(true);
         EmbedBuilder eBuilder = new EmbedBuilder();
-        eBuilder.setTitle("Respond by mention");
-        eBuilder.setDescription("Bot is now responding by: **mention**");
+        eBuilder.setTitle("Respond by prefix");
+        if (!args.isEmpty()) {
+            String prefix = args.get(0);
+            eBuilder.setTitle("Prefix changed");
+            fireStoreService.getModel().setPrefix(prefix);
+        }
+        fireStoreService.updateConfigModel();
+        eBuilder.setDescription("Bot is now responding by: **prefix**\n" +
+                "Current value for prefix: " + "`" + fireStoreService.getModel().getPrefix() + "`");
         return eBuilder;
     }
 }

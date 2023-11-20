@@ -1,4 +1,4 @@
-package pl.xnik3e.Guardian.components.Command.Commands;
+package pl.xnik3e.Guardian.components.Command.Commands.ConfigCommands;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
@@ -72,7 +72,7 @@ public class HelpCommand implements ICommand {
         builder.setTitle(getTitle());
         builder.setDescription(getDescription());
         builder.addField("Usage", "`{prefix or mention} help <command>`", false);
-        builder.addField("Available aliases", "`h`", false);
+        builder.addField("Available aliases", messageUtils.createAliasString(getAliases()), false);
         Color color = new Color((int) (Math.random() * 0x1000000));
         builder.setColor(color);
         return builder.build();

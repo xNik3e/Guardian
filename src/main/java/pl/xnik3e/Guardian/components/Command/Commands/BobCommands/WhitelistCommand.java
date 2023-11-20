@@ -1,4 +1,4 @@
-package pl.xnik3e.Guardian.components.Command.Commands;
+package pl.xnik3e.Guardian.components.Command.Commands.BobCommands;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
@@ -58,7 +58,7 @@ public class WhitelistCommand implements ICommand {
                 "`" + fireStoreService.getModel().getPrefix() + "whitelist 1164645019769131029`\n"
                         + "`" + fireStoreService.getModel().getPrefix() + "whitelist @xnik3e`",
                 false);
-        embedBuilder.addField("Available aliases", "`wl`", false);
+        embedBuilder.addField("Available aliases", messageUtils.createAliasString(getAliases()), false);
         Color color = new Color((int) (Math.random() * 0x1000000));
         embedBuilder.setColor(color);
         return embedBuilder.build();
@@ -90,13 +90,13 @@ public class WhitelistCommand implements ICommand {
             eBuilder.setTitle("An error occurred");
             eBuilder.setDescription("Please provide valid user id or mention");
             eBuilder.setColor(Color.RED);
-            respondToUser(ctx, event, eBuilder);
+            messageUtils.respondToUser(ctx, event, eBuilder);
             return;
         }
         Matcher matcher = Pattern.compile("\\d+")
                 .matcher(args.get(0));
         if (!matcher.find()) {
-            respondToUser(ctx, event, eBuilder);
+            messageUtils.respondToUser(ctx, event, eBuilder);
             return;
         }
         String userId = matcher.group();
@@ -110,20 +110,15 @@ public class WhitelistCommand implements ICommand {
                     .forEachOrdered(stringBuilder::append);
             eBuilder.setTitle("Whitelisted nicknames for user " + member.getEffectiveName());
             eBuilder.setDescription(stringBuilder.toString().isEmpty() ? "No whitelisted nicknames found" : stringBuilder.toString());
-            eBuilder.setColor(Color.GREEN);
-            respondToUser(ctx, event, eBuilder);
+            eBuilder.setColor(stringBuilder.toString().isEmpty() ? Color.YELLOW : Color.GREEN);
+            messageUtils.respondToUser(ctx, event, eBuilder);
         }, error -> {
             eBuilder.setTitle("An error occurred");
             eBuilder.setDescription("Please provide valid user id or mention");
             eBuilder.setColor(Color.RED);
-            respondToUser(ctx, event, eBuilder);
+            messageUtils.respondToUser(ctx, event, eBuilder);
         });
     }
 
-    private void respondToUser(CommandContext ctx, SlashCommandInteractionEvent event, EmbedBuilder eBuilder) {
-        if (ctx != null)
-            messageUtils.respondToUser(ctx, eBuilder.build());
-        else
-            event.getHook().sendMessageEmbeds(eBuilder.build()).setEphemeral(true).queue();
-    }
+
 }

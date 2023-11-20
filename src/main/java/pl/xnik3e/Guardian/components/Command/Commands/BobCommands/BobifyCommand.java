@@ -1,4 +1,4 @@
-package pl.xnik3e.Guardian.components.Command.Commands;
+package pl.xnik3e.Guardian.components.Command.Commands.BobCommands;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
@@ -57,7 +57,7 @@ public class BobifyCommand implements ICommand {
         embedBuilder.addField("Example",
                 "`" + fireStoreService.getModel().getPrefix() + "bobify @xnik3e`", false);
         embedBuilder.addField("Requirements", "User must have non-mentionable nickname", false);
-        embedBuilder.addField("Aliases", "`bob`, `b`", false);
+        embedBuilder.addField("Aliases", messageUtils.createAliasString(getAliases()), false);
         Color color = new Color((int) (Math.random() * 0x1000000));
         embedBuilder.setColor(color);
         return embedBuilder.build();
@@ -90,14 +90,14 @@ public class BobifyCommand implements ICommand {
             embedBuilder.setTitle("Missing argument");
             embedBuilder.setDescription("You must provide user id or mention");
             embedBuilder.setColor(Color.RED);
-            respondToUser(ctx, event, embedBuilder);
+            messageUtils.respondToUser(ctx, event, embedBuilder);
             return;
         }
         if (args.size() != 1) {
             embedBuilder.setTitle("Too many arguments");
             embedBuilder.setDescription("You must provide only one argument");
             embedBuilder.setColor(Color.RED);
-            respondToUser(ctx, event, embedBuilder);
+            messageUtils.respondToUser(ctx, event, embedBuilder);
             return;
         }
 
@@ -107,7 +107,7 @@ public class BobifyCommand implements ICommand {
             embedBuilder.setTitle("Error");
             embedBuilder.setDescription("Please provide valid user id");
             embedBuilder.setColor(Color.RED);
-            respondToUser(ctx, event, embedBuilder);
+            messageUtils.respondToUser(ctx, event, embedBuilder);
             return;
         }
         String userID = matcher.group();
@@ -120,12 +120,12 @@ public class BobifyCommand implements ICommand {
                         embedBuilder.setTitle("Success");
                         embedBuilder.setDescription("Bobified " + members.size() + " users");
                         embedBuilder.setColor(Color.GREEN);
-                        respondToUser(ctx, event, embedBuilder);
+                        messageUtils.respondToUser(ctx, event, embedBuilder);
                     }).onError(error -> {
                         embedBuilder.setTitle("Error");
                         embedBuilder.setDescription("Something went wrong");
                         embedBuilder.setColor(Color.RED);
-                        respondToUser(ctx, event, embedBuilder);
+                        messageUtils.respondToUser(ctx, event, embedBuilder);
                     });
         } else {
             guild.retrieveMemberById(userID).queue(member -> {
@@ -141,15 +141,10 @@ public class BobifyCommand implements ICommand {
                 embedBuilder.addField("Previous nickname", member.getEffectiveName(), false);
                 embedBuilder.setColor(Color.GREEN);
                 messageUtils.bobify(member);
-                respondToUser(ctx, event, embedBuilder);
+                messageUtils.respondToUser(ctx, event, embedBuilder);
             });
         }
     }
 
-    private CompletableFuture<Message> respondToUser(CommandContext ctx, SlashCommandInteractionEvent event, EmbedBuilder eBuilder) {
-        if (ctx != null)
-            return messageUtils.respondToUser(ctx, eBuilder.build());
-        else
-            return event.getHook().sendMessageEmbeds(eBuilder.build()).setEphemeral(true).submit();
-    }
+
 }

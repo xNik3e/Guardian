@@ -8,7 +8,13 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
-import pl.xnik3e.Guardian.components.Command.Commands.*;
+import pl.xnik3e.Guardian.components.Command.Commands.AdminCommands.BanUsersWithRoleCommand;
+import pl.xnik3e.Guardian.components.Command.Commands.AdminCommands.FetchUsersWithRoleCommand;
+import pl.xnik3e.Guardian.components.Command.Commands.BobCommands.GetBobCommand;
+import pl.xnik3e.Guardian.components.Command.Commands.BobCommands.BobifyCommand;
+import pl.xnik3e.Guardian.components.Command.Commands.BobCommands.NickBlackListCommand;
+import pl.xnik3e.Guardian.components.Command.Commands.BobCommands.WhitelistCommand;
+import pl.xnik3e.Guardian.components.Command.Commands.ConfigCommands.*;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -27,19 +33,7 @@ public class CommandManager {
     @Autowired
     public CommandManager(MessageUtils messageUtils){
         this.messageUtils = messageUtils;
-        addCommand(new FetchUsersWithRoleCommand(messageUtils));
-        addCommand(new InitCommand(messageUtils));
-        addCommand(new TogglePrefixCommand(messageUtils));
-        addCommand(new ToggleMentionCommand(messageUtils));
-        addCommand(new BanUsersWithRoleCommand(messageUtils));
-        addCommand(new HelpCommand(this, messageUtils));
-        addCommand(new ToggleBotResponseCommand(messageUtils));
-        addCommand(new ResetCommand(messageUtils));
-        addCommand(new DeleteTriggerCommand(messageUtils));
-        addCommand(new WhitelistCommand(messageUtils));
-        addCommand(new NickBlackListCommand(messageUtils));
-        addCommand(new BobCommand(messageUtils));
-        addCommand(new BobifyCommand(messageUtils));
+        addCommands();
     }
 
     private void addCommand(ICommand cmd) {
@@ -83,7 +77,7 @@ public class CommandManager {
         if (checkInit(cmd)) {
             List<String> args = Arrays.asList(split).subList(1, split.length);
             CommandContext ctx = new CommandContext(event, args);
-            cmd.handle(ctx);
+            new Thread(() -> cmd.handle(ctx)).start();
         }else{
             User user = event.getAuthor();
             event.getMessage().delete().queue();
@@ -111,7 +105,7 @@ public class CommandManager {
 
         if (checkInit(cmd)) {
             List<String> args = Arrays.asList(split).subList(1, split.length);
-            cmd.handleSlash(event, args);
+            new Thread(() -> cmd.handleSlash(event, args)).start();
         }else{
             User user = event.getUser();
             EmbedBuilder embedBuilder = new EmbedBuilder();
@@ -132,4 +126,20 @@ public class CommandManager {
         return !a || b;
     }
 
+
+    private void addCommands() {
+        addCommand(new FetchUsersWithRoleCommand(messageUtils));
+        addCommand(new InitCommand(messageUtils));
+        addCommand(new TogglePrefixCommand(messageUtils));
+        addCommand(new ToggleMentionCommand(messageUtils));
+        addCommand(new BanUsersWithRoleCommand(messageUtils));
+        addCommand(new HelpCommand(this, messageUtils));
+        addCommand(new ToggleBotResponseCommand(messageUtils));
+        addCommand(new ResetCommand(messageUtils));
+        addCommand(new DeleteTriggerCommand(messageUtils));
+        addCommand(new WhitelistCommand(messageUtils));
+        addCommand(new NickBlackListCommand(messageUtils));
+        addCommand(new GetBobCommand(messageUtils));
+        addCommand(new BobifyCommand(messageUtils));
+    }
 }
