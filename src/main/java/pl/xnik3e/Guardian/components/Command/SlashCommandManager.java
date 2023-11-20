@@ -25,6 +25,8 @@ public class SlashCommandManager {
                                         .addChoice("Reset bot", "r")
                                         .addChoice("Get whitelisted nicknames for User", "wl")
                                         .addChoice("Blacklist provided nickname id for specific user", "bl")
+                                        .addChoice("Get users with non-mentionable nickname", "gb")
+                                        .addChoice("Bobify provided nickname id for specific user", "bf")
                         ),
                 Commands.slash("init", "Init the bot")
                         .addOptions(
