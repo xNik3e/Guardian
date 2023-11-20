@@ -61,27 +61,6 @@ public class MessageCommandListener extends ListenerAdapter {
         String buttonId = event.getButton().getId();
         buttonManager.handle(event, Objects.requireNonNull(buttonId));
         switch (Objects.requireNonNull(buttonId)) {
-            case "unban":
-                String messageId = event.getMessageId();
-                Message message = event.getMessage();
-                event.deferEdit().queue();
-                Thread thread = new Thread(() -> {
-                    TempBanModel tempBanModel = fireStoreService.fetchBanModel(messageId);
-                    if (tempBanModel != null) {
-                        event.getGuild().unban(UserSnowflake.fromId(tempBanModel.getUserId())).queue(s -> {
-                            message.delete().queue();
-                            fireStoreService.deleteBanModel(messageId);
-                            MessageChannel logChannel = event.getGuild().getChannelById(MessageChannel.class, fireStoreService.getModel().getChannelIdToSendLog());
-                            if (logChannel != null) {
-                                logChannel.sendMessage("User " + tempBanModel.getUserId() + " has been unbanned").queue();
-                            }
-                        }, f -> {
-                            messageUtils.openPrivateChannelAndMessageUser(event.getUser(), "Something went wrong");
-                        });
-                    }
-                });
-                thread.start();
-                break;
             case "appeal":
                 String messageId1 = event.getMessageId();
                 Message message1 = event.getMessage();

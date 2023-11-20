@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import pl.xnik3e.Guardian.Services.FireStoreService;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
 import pl.xnik3e.Guardian.components.Button.Buttons.ResetButton;
+import pl.xnik3e.Guardian.components.Button.Buttons.UnbanButton;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -62,5 +63,6 @@ public class ButtonManager {
 
     private void addButtons() {
         addButton(new ResetButton(messageUtils));
+        addButton(new UnbanButton(messageUtils));
     }
 }
