@@ -39,6 +39,7 @@ public class CommandManager {
         addCommand(new WhitelistCommand(messageUtils));
         addCommand(new NickBlackListCommand(messageUtils));
         addCommand(new BobCommand(messageUtils));
+        addCommand(new BobifyCommand(messageUtils));
     }
 
     private void addCommand(ICommand cmd) {

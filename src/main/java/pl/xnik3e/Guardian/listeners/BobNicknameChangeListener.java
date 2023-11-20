@@ -49,26 +49,8 @@ public class BobNicknameChangeListener extends ListenerAdapter {
         Member member = event.getMember();
         boolean hasMentionableNick = messageUtils.hasMentionableNickName(member);
         if(!hasMentionableNick){
-            changeNickName(member);
+            messageUtils.bobify(member);
         }
     }
 
-    private void changeNickName(Member member){
-        EmbedBuilder embedBuilder = new EmbedBuilder();
-        embedBuilder.setTitle("Nieoznaczalny nick");
-        embedBuilder.addField("Nieoznaczalny nick", member.getEffectiveName(), false);
-        embedBuilder.setDescription("No cześć! Zdaje mi się, że Twój nick - **" + member.getEffectiveName() +"** - nie jest oznaczalny.\n" +
-                "Według punktu 5. regulaminu serwera, musisz zmienić swój nick.\n" +
-                "Na ten moment nazywasz się **BOB**. Jeżeli Ci to pasuje - zajebiście, będziemy się tak do Ciebie zwracać.\n"
-                + "Jeżeli jednak nie chcesz zostać do końca swojego życia Bobem, możesz w każdej chwili zmienić swój nick.\n");
-        embedBuilder.setColor(Color.PINK);
-        Button button = Button.primary("appeal", "Odwołaj się");
-        MessageCreateData data = new MessageCreateBuilder().setEmbeds(embedBuilder.build()).setActionRow(button).build();
-        try{
-            member.modifyNickname("Bob").queue();
-            messageUtils.openPrivateChannelAndMessageUser(member.getUser(), data);
-        }catch(Exception e){
-            System.err.println("User is higher in hierarchy than bot");
-        }
-    }
 }

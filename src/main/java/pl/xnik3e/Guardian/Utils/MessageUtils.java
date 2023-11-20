@@ -381,6 +381,13 @@ public class MessageUtils {
         });
     }
 
+    /**
+     * Checks if member has mentionable nickname.
+     * <p></p>
+     *
+     * @param member Member to check
+     * @return true if member has mentionable nickname, false otherwise
+     */
     public boolean hasMentionableNickName(Member member) {
         if (checkAuthority(member))
             return true;
@@ -396,5 +403,31 @@ public class MessageUtils {
         });
         float percent = (float) (mentionable.get() * 100) / nick.length();
         return percent > 75;
+    }
+
+
+    /**
+     * Bobify the given member.
+     * <p></p>
+     *
+     * @param member Member to bobify
+     */
+    public void bobify(Member member){
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setTitle("Nieoznaczalny nick");
+        embedBuilder.addField("Nieoznaczalny nick", member.getEffectiveName(), false);
+        embedBuilder.setDescription("No cześć! Zdaje mi się, że Twój nick - **" + member.getEffectiveName() +"** - nie jest oznaczalny.\n" +
+                "Według punktu 5. regulaminu serwera, musisz zmienić swój nick.\n" +
+                "Na ten moment nazywasz się **BOB**. Jeżeli Ci to pasuje - zajebiście, będziemy się tak do Ciebie zwracać.\n"
+                + "Jeżeli jednak nie chcesz zostać do końca swojego życia Bobem, możesz w każdej chwili zmienić swój nick.\n");
+        embedBuilder.setColor(Color.PINK);
+        Button button = Button.primary("appeal", "Odwołaj się");
+        MessageCreateData data = new MessageCreateBuilder().setEmbeds(embedBuilder.build()).setActionRow(button).build();
+        try{
+            member.modifyNickname("Bob").queue();
+            openPrivateChannelAndMessageUser(member.getUser(), data);
+        }catch(Exception e){
+            System.err.println("User is higher in hierarchy than bot");
+        }
     }
 }

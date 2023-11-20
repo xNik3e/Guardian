@@ -52,7 +52,11 @@ public class SlashCommandManager {
                                 new OptionData(OptionType.USER, "user", "User to blacklist nickname", true),
                                 new OptionData(OptionType.STRING, "id", "Nickname id to blacklist or **ALL** to blacklist all", true)
                         ),
-                Commands.slash("getbob", "Get users with non-mentionable nickname")
+                Commands.slash("getbob", "Get users with non-mentionable nickname"),
+                Commands.slash("bobify", "Bobify provided nickname id for specific user")
+                        .addOptions(
+                                new OptionData(OptionType.STRING, "id", "Nickname id or mention to bobify specific user or **ALL** to bobify all", true)
+                        )
         ).queue();
     }
 }

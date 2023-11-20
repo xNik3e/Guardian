@@ -192,6 +192,28 @@ public class MessageCommandListener extends ListenerAdapter {
                     messageUtils.openPrivateChannelAndMessageUser(member.getUser(), embedBuilder.build());
                 });
                 break;
+            case "bobifyall":
+                event.deferEdit().queue();
+                Message message4 = event.getMessage();
+                MessageEmbed embed = message4.getEmbeds().get(0);
+                embed.getFields().forEach(field -> {
+                    String UID = field.getValue();
+                    event.getGuild().retrieveMemberById(UID).queue(member ->{
+                        NickNameModel model = fireStoreService.getNickNameModel(member.getId());
+                        if(model != null){
+                            model.getNickName().remove(member.getEffectiveName());
+                            fireStoreService.updateNickModel(model);
+                        }
+                        messageUtils.bobify(member);
+                    });
+                });
+                event.getHook().editOriginalComponents().queue();
+                event.getHook().editOriginalEmbeds(new EmbedBuilder()
+                        .setTitle("Success")
+                        .setDescription("Bobified all users")
+                        .setColor(Color.GREEN)
+                        .build()).queue();
+            break;
         }
 
     }
