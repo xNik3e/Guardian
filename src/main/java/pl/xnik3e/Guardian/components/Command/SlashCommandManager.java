@@ -51,7 +51,8 @@ public class SlashCommandManager {
                         .addOptions(
                                 new OptionData(OptionType.USER, "user", "User to blacklist nickname", true),
                                 new OptionData(OptionType.STRING, "id", "Nickname id to blacklist or **ALL** to blacklist all", true)
-                        )
+                        ),
+                Commands.slash("getbob", "Get users with non-mentionable nickname")
         ).queue();
     }
 }

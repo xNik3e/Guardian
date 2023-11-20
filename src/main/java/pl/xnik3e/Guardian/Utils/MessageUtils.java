@@ -22,6 +22,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -31,10 +32,10 @@ public class MessageUtils {
 
     private final FireStoreService fireStoreService;
     private final ConfigModel configModel;
-    private final List<String> mentionableCharacters = List.of( "a", "ą", "b", "c", "ć", "d", "e", "ę", "f", "g", "h", "i", "j", "k", "l", "ł", "m",
+    private final List<String> mentionableCharacters = List.of("a", "ą", "b", "c", "ć", "d", "e", "ę", "f", "g", "h", "i", "j", "k", "l", "ł", "m",
             "n", "o", "ó", "p", "q", "r", "s", "ś", "t", "u", "v", "w", "x", "y", "z", "ź", "ż", "A", "Ą", "B", "C", "Ć", "D", "E", "Ę", "F",
             "G", "H", "I", "J", "K", "L", "Ł", "M", "N", "O", "Ó", "P", "Q", "R", "S", "Ś", "T", "U", "V", "W", "X", "Y", "Z", "Ź", "Ż", "1",
-            "2", "3", "4", "5", "6", "7", "8", "9", "0", " ", "-", "_", "!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "+", "=", "[", "]",".");
+            "2", "3", "4", "5", "6", "7", "8", "9", "0", " ", "-", "_", "!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "+", "=", "[", "]", ".");
 
 
     @Autowired
@@ -173,12 +174,11 @@ public class MessageUtils {
      * @param user    Member to send private message to
      * @param message Message to send
      */
-    public void openPrivateChannelAndMessageUser(User user, String message) {
-        user
+    public CompletableFuture<Message> openPrivateChannelAndMessageUser(User user, String message) {
+        return user
                 .openPrivateChannel()
-                .queue(privateChannel -> {
-                    privateChannel.sendMessage(message).queue();
-                });
+                .flatMap(privateChannel -> privateChannel.sendMessage(message))
+                .submit();
     }
 
     /**
@@ -188,12 +188,11 @@ public class MessageUtils {
      * @param user    Member to send private message to
      * @param message MessageEmbed to send
      */
-    public void openPrivateChannelAndMessageUser(User user, MessageEmbed message) {
-        user
+    public CompletableFuture<Message> openPrivateChannelAndMessageUser(User user, MessageEmbed message) {
+        return user
                 .openPrivateChannel()
-                .queue(privateChannel -> {
-                    privateChannel.sendMessageEmbeds(message).queue();
-                });
+                .flatMap(privateChannel -> privateChannel.sendMessageEmbeds(message))
+                .submit();
     }
 
     /**
@@ -202,13 +201,13 @@ public class MessageUtils {
      *
      * @param user    Member to send private message to
      * @param message MessageCreateData to send
+     * @return
      */
-    public void openPrivateChannelAndMessageUser(User user, MessageCreateData message) {
-        user
+    public CompletableFuture<Message> openPrivateChannelAndMessageUser(User user, MessageCreateData message) {
+        return user
                 .openPrivateChannel()
-                .queue(privateChannel -> {
-                    privateChannel.sendMessage(message).queue();
-                });
+                .flatMap(privateChannel -> privateChannel.sendMessage(message))
+                .submit();
     }
 
     /**
@@ -218,11 +217,11 @@ public class MessageUtils {
      * @param ctx     CommandContext to get member from
      * @param message Message to send
      */
-    public void respondToUser(CommandContext ctx, String message) {
+    public CompletableFuture<Message> respondToUser(CommandContext ctx, String message) {
         if (configModel.isRespondInDirectMessage()) {
-            openPrivateChannelAndMessageUser(ctx.getMember().getUser(), message);
+            return openPrivateChannelAndMessageUser(ctx.getMember().getUser(), message);
         } else {
-            ctx.getMessage().reply(message).queue();
+            return ctx.getMessage().reply(message).submit();
         }
     }
 
@@ -233,11 +232,11 @@ public class MessageUtils {
      * @param ctx     CommandContext to get member from
      * @param message MessageEmbed to send
      */
-    public void respondToUser(CommandContext ctx, MessageEmbed message) {
+    public CompletableFuture<Message> respondToUser(CommandContext ctx, MessageEmbed message) {
         if (configModel.isRespondInDirectMessage()) {
-            openPrivateChannelAndMessageUser(ctx.getMember().getUser(), message);
+            return openPrivateChannelAndMessageUser(ctx.getMember().getUser(), message);
         } else {
-            ctx.getMessage().replyEmbeds(message).queue();
+            return ctx.getMessage().replyEmbeds(message).submit();
         }
     }
 
@@ -247,12 +246,13 @@ public class MessageUtils {
      *
      * @param ctx     CommandContext to get member from
      * @param message MessageCreateData to send
+     * @return
      */
-    public void respondToUser(CommandContext ctx, MessageCreateData message) {
+    public CompletableFuture<Message> respondToUser(CommandContext ctx, MessageCreateData message) {
         if (configModel.isRespondInDirectMessage()) {
-            openPrivateChannelAndMessageUser(ctx.getMember().getUser(), message);
+            return openPrivateChannelAndMessageUser(ctx.getMember().getUser(), message);
         } else {
-            ctx.getMessage().reply(message).queue();
+            return ctx.getMessage().reply(message).submit();
         }
     }
 
@@ -305,7 +305,7 @@ public class MessageUtils {
                             .append(" - ").append("niespełnianie wymagań wiekowych");
                     if (logChannel != null)
                         logChannel.sendMessage(sb.toString()).queue();
-                    if(echoChannel != null)
+                    if (echoChannel != null)
                         echoChannel.sendMessage(sb.toString()).queue();
                 }
         );
@@ -331,7 +331,7 @@ public class MessageUtils {
         return excludedMembers.contains(member.getUser().getId());
     }
 
-    private void tempBanUser(@NonNull User user, MessageChannel channel, Guild guild, long time, TimeUnit timeUnit, String reason){
+    private void tempBanUser(@NonNull User user, MessageChannel channel, Guild guild, long time, TimeUnit timeUnit, String reason) {
         TempBanModel tempBanModel = new TempBanModel();
         tempBanModel.setUserId(user.getId());
         tempBanModel.setAvatarUrl(user.getAvatarUrl());
@@ -352,7 +352,7 @@ public class MessageUtils {
                 tempBanModel.getUserName() + "has been banned for " + weeks + " weeks and " + days + " days",
                 null,
                 tempBanModel.getAvatarUrl());
-        embedBuilder.setDescription("**Reason:** "+ tempBanModel.getReason());
+        embedBuilder.setDescription("**Reason:** " + tempBanModel.getReason());
         DateFormat f = new SimpleDateFormat("dd.MM.yyyy");
         embedBuilder.setFooter("Baned until | " + f.format(date));
         embedBuilder.setColor(0x5acff5);
@@ -382,16 +382,16 @@ public class MessageUtils {
     }
 
     public boolean hasMentionableNickName(Member member) {
-        if(checkAuthority(member))
+        if (checkAuthority(member))
             return true;
         String nick = member.getEffectiveName();
         boolean whitelisted = fireStoreService.checkIfWhitelisted(member.getUser().getId(), nick);
-        if(whitelisted)
+        if (whitelisted)
             return true;
 
         AtomicInteger mentionable = new AtomicInteger();
         nick.chars().forEach(c -> {
-            if(mentionableCharacters.contains(String.valueOf((char) c)))
+            if (mentionableCharacters.contains(String.valueOf((char) c)))
                 mentionable.getAndIncrement();
         });
         float percent = (float) (mentionable.get() * 100) / nick.length();

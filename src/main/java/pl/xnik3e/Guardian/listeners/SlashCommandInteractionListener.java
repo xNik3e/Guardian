@@ -107,6 +107,10 @@ public class SlashCommandInteractionListener extends ListenerAdapter {
                 }
                 manager.handle(event, command.toString());
                 break;
+            case "getbob":
+                command.append("fb");
+                manager.handle(event, command.toString());
+                break;
             default:
                 event.getHook().sendMessage("Command not found").setEphemeral(true).queue();
 
