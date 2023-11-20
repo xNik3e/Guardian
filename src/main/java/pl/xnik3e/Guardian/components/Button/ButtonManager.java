@@ -6,10 +6,7 @@ import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import org.springframework.stereotype.Component;
 import pl.xnik3e.Guardian.Services.FireStoreService;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
-import pl.xnik3e.Guardian.components.Button.Buttons.ResetButton;
-import pl.xnik3e.Guardian.components.Button.Buttons.UnbanButton;
-import pl.xnik3e.Guardian.components.Button.Buttons.UserAppealAcceptButton;
-import pl.xnik3e.Guardian.components.Button.Buttons.UserAppealButton;
+import pl.xnik3e.Guardian.components.Button.Buttons.*;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -68,5 +65,6 @@ public class ButtonManager {
         addButton(new UnbanButton(messageUtils));
         addButton(new UserAppealButton(messageUtils));
         addButton(new UserAppealAcceptButton(messageUtils));
+        addButton(new UserAppealRejectButton(messageUtils));
     }
 }

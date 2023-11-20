@@ -61,33 +61,6 @@ public class MessageCommandListener extends ListenerAdapter {
         String buttonId = event.getButton().getId();
         buttonManager.handle(event, Objects.requireNonNull(buttonId));
         switch (Objects.requireNonNull(buttonId)) {
-            case "rejectAppeal":
-                NickNameModel rejectedNickNameModel = new NickNameModel();
-                event.deferEdit().queue();
-                Message message3 = event.getMessage();
-                message3.getEmbeds().get(0).getFields().forEach(field -> {
-                    if (field.getName().equals("Nick"))
-                        rejectedNickNameModel.getNickName().add(field.getValue());
-                    else if (field.getName().equals("UserID"))
-                        rejectedNickNameModel.setUserID(field.getValue());
-                });
-                event.getGuild().retrieveMemberById(rejectedNickNameModel.getUserID()).queue(member -> {
-                    event.getHook().editOriginalComponents().queue();
-                    event.getHook().editOriginalEmbeds(new EmbedBuilder()
-                            .setTitle("Odwołanie odrzucone")
-                            .setDescription("Odwołanie o zmianę nicku dla użytkownika " +
-                                    member.getAsMention() + " zostało odrzucone")
-                            .addField("Poprzedni nick", rejectedNickNameModel.getNickName().get(0), false)
-                            .setColor(Color.RED)
-                            .build()).queue();
-
-                    EmbedBuilder embedBuilder = new EmbedBuilder();
-                    embedBuilder.setTitle("Odwołanie automatycznej zmiany nicku");
-                    embedBuilder.setDescription("Twoje odwołanie zostało odrzucone");
-                    embedBuilder.setColor(Color.RED);
-                    messageUtils.openPrivateChannelAndMessageUser(member.getUser(), embedBuilder.build());
-                });
-                break;
             case "bobifyall":
                 event.deferEdit().queue();
                 Message message4 = event.getMessage();
