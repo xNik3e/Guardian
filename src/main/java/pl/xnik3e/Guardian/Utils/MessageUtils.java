@@ -275,22 +275,22 @@ public class MessageUtils {
         MessageChannel echoChannel = guild.getChannelById(MessageChannel.class, fireStoreService.getModel().getChannelIdToSendEchoLog());
 
         toBeBannedIds.forEach(id -> {
-                    Member member = guild.getMemberById(id);
-                    tempBanUser(member.getUser(), channel, guild, 365, TimeUnit.DAYS, "Niespełnianie wymagań wiekowych");
-
-                    StringBuilder sb = new StringBuilder();
-                    sb
-                            .append("<@")
-                            .append(id)
-                            .append("> - ")
-                            .append(member.getUser().getName())
-                            .append(" - ")
-                            .append("tempban rok")
-                            .append(" - ").append("niespełnianie wymagań wiekowych");
-                    if (logChannel != null)
-                        logChannel.sendMessage(sb.toString()).queue();
-                    if (echoChannel != null)
-                        echoChannel.sendMessage(sb.toString()).queue();
+                    guild.retrieveMemberById(id).queue(member -> {
+                        tempBanUser(member.getUser(), channel, guild, 365, TimeUnit.DAYS, "Niespełnianie wymagań wiekowych");
+                        StringBuilder sb = new StringBuilder();
+                        sb
+                                .append("<@")
+                                .append(id)
+                                .append("> - ")
+                                .append(member.getUser().getName())
+                                .append(" - ")
+                                .append("tempban rok")
+                                .append(" - ").append("niespełnianie wymagań wiekowych");
+                        if (logChannel != null)
+                            logChannel.sendMessage(sb.toString()).queue();
+                        if (echoChannel != null)
+                            echoChannel.sendMessage(sb.toString()).queue();
+                    });
                 }
         );
     }
