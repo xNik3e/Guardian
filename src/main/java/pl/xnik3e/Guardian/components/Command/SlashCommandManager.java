@@ -25,6 +25,8 @@ public class SlashCommandManager {
                                         .addChoice("Reset bot", "r")
                                         .addChoice("Get whitelisted nicknames for User", "wl")
                                         .addChoice("Blacklist provided nickname id for specific user", "bl")
+                                        .addChoice("Get users with non-mentionable nickname", "gb")
+                                        .addChoice("Bobify provided nickname id for specific user", "bf")
                         ),
                 Commands.slash("init", "Init the bot")
                         .addOptions(
@@ -51,6 +53,11 @@ public class SlashCommandManager {
                         .addOptions(
                                 new OptionData(OptionType.USER, "user", "User to blacklist nickname", true),
                                 new OptionData(OptionType.STRING, "id", "Nickname id to blacklist or **ALL** to blacklist all", true)
+                        ),
+                Commands.slash("getbob", "Get users with non-mentionable nickname"),
+                Commands.slash("bobify", "Bobify provided nickname id for specific user")
+                        .addOptions(
+                                new OptionData(OptionType.STRING, "id", "Nickname id or mention to bobify specific user or **ALL** to bobify all", true)
                         )
         ).queue();
     }

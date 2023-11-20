@@ -148,7 +148,10 @@ public class NickBlackListCommand implements ICommand {
         }
 
         model.getNickName().remove(index - 1);
-        fireStoreService.updateNickModel(model);
+        if(model.getNickName().isEmpty())
+            fireStoreService.deleteNickNameModel(userID);
+        else
+            fireStoreService.updateNickModel(model);
         builder.setTitle("Success");
         builder.setDescription("Deleted nickname with index: " + index + " for user with id: " + userID);
         builder.setColor(Color.GREEN);

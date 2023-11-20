@@ -90,7 +90,7 @@ public class SlashCommandInteractionListener extends ListenerAdapter {
             case "whitelist":
                 command.append("whitelist");
                 Optional<OptionMapping> optionWhitelist = Optional.of(event.getOption("user"));
-                if(optionWhitelist.isPresent()){
+                if (optionWhitelist.isPresent()) {
                     String argument = optionWhitelist.get().getAsString();
                     command.append(" ").append(argument);
                 }
@@ -100,10 +100,23 @@ public class SlashCommandInteractionListener extends ListenerAdapter {
                 command.append("blacklist");
                 Optional<OptionMapping> optionBlacklistUser = Optional.of(event.getOption("user"));
                 Optional<OptionMapping> optionBlacklistId = Optional.of(event.getOption("id"));
-                if(optionBlacklistUser.isPresent() && optionBlacklistId.isPresent()){
+                if (optionBlacklistUser.isPresent() && optionBlacklistId.isPresent()) {
                     String argumentUser = optionBlacklistUser.get().getAsString();
                     String argumentId = optionBlacklistId.get().getAsString();
                     command.append(" ").append(argumentUser).append(" ").append(argumentId);
+                }
+                manager.handle(event, command.toString());
+                break;
+            case "getbob":
+                command.append("fb");
+                manager.handle(event, command.toString());
+                break;
+            case "bobify":
+                command.append("bobify");
+                Optional<OptionMapping> optionBobify = Optional.of(event.getOption("id"));
+                if (optionBobify.isPresent()) {
+                    String argument = optionBobify.get().getAsString();
+                    command.append(" ").append(argument);
                 }
                 manager.handle(event, command.toString());
                 break;
