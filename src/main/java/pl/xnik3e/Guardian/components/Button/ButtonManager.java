@@ -46,16 +46,18 @@ public class ButtonManager {
     }
 
     public void handle(ButtonInteractionEvent event, String invoke){
-        IButton button = this.getButton(invoke);
-        if(button == null){
-            EmbedBuilder embed = new EmbedBuilder();
-            embed.setTitle("Error");
-            embed.setDescription("Button interaction failed");
-            embed.setColor(Color.RED);
-            event.deferReply(true).addEmbeds(embed.build()).queue();
-            return;
+        if(messageUtils.checkAuthority(event.getMember())){
+            IButton button = this.getButton(invoke);
+            if(button == null){
+                EmbedBuilder embed = new EmbedBuilder();
+                embed.setTitle("Error");
+                embed.setDescription("Button interaction failed");
+                embed.setColor(Color.RED);
+                event.deferReply(true).addEmbeds(embed.build()).queue();
+                return;
+            }
+            new Thread(() -> button.handle(event)).start();
         }
-        new Thread(() -> button.handle(event)).start();
     }
 
     private void addButtons() {

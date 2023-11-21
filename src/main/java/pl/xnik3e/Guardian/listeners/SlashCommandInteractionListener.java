@@ -6,6 +6,7 @@ import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import pl.xnik3e.Guardian.Utils.MessageUtils;
 import pl.xnik3e.Guardian.components.Command.CommandManager;
 
 import java.util.Optional;
@@ -14,14 +15,18 @@ import java.util.Optional;
 public class SlashCommandInteractionListener extends ListenerAdapter {
 
     private final CommandManager manager;
+    private final MessageUtils messageUtils;
 
     @Autowired
-    public SlashCommandInteractionListener(CommandManager manager) {
+    public SlashCommandInteractionListener(CommandManager manager, MessageUtils messageUtils) {
         this.manager = manager;
+        this.messageUtils = messageUtils;
     }
 
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
+        if(!messageUtils.checkAuthority(event.getMember()))
+            return;
         event.deferReply().setEphemeral(true).queue();
         String commandName = event.getName();
         StringBuilder command = new StringBuilder();
