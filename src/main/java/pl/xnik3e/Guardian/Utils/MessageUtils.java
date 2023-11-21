@@ -21,6 +21,7 @@ import pl.xnik3e.Guardian.components.Command.CommandContext;
 import java.awt.*;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -33,10 +34,11 @@ public class MessageUtils {
 
     private final FireStoreService fireStoreService;
     private final ConfigModel configModel;
-    private final List<String> mentionableCharacters = List.of("a", "ą", "b", "c", "ć", "d", "e", "ę", "f", "g", "h", "i", "j", "k", "l", "ł", "m",
-            "n", "o", "ó", "p", "q", "r", "s", "ś", "t", "u", "v", "w", "x", "y", "z", "ź", "ż", "A", "Ą", "B", "C", "Ć", "D", "E", "Ę", "F",
-            "G", "H", "I", "J", "K", "L", "Ł", "M", "N", "O", "Ó", "P", "Q", "R", "S", "Ś", "T", "U", "V", "W", "X", "Y", "Z", "Ź", "Ż", "1",
-            "2", "3", "4", "5", "6", "7", "8", "9", "0", " ", "-", "_", "!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "+", "=", "[", "]", ".");
+    private final List<String> mentionableCharacters = List.of("a", "ą", "b", "c", "ć", "d", "e", "ę", "f", "g", "h", "i", "j", "k",
+            "l", "ł", "m", "n", "o", "ó", "p", "q", "r", "s", "ś", "t", "u", "v", "w", "x", "y", "z", "ź", "ż", "A", "Ą", "B", "C", "Ć", "D",
+            "E", "Ę", "F", "G", "H", "I", "J", "K", "L", "Ł", "M", "N", "O", "Ó", "P", "Q", "R", "S", "Ś", "T", "U", "V", "W", "X", "Y", "Z",
+            "Ź", "Ż", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", " ", "-", "_", "!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "+",
+            "=", "[", "]", ".", "<", ">", "{", "}");
 
 
     @Autowired
@@ -229,12 +231,12 @@ public class MessageUtils {
      * Sends message to user in private channel or in channel where command was invoked.
      * <p></p>
      *
-     * @param ctx CommandContext to get member from
-     * @param event SlashCommandInteractionEvent to get hook from
+     * @param ctx      CommandContext to get member from
+     * @param event    SlashCommandInteractionEvent to get hook from
      * @param eBuilder Message to send in form of EmbedBuilder
      */
     public CompletableFuture<Message> respondToUser(CommandContext ctx, SlashCommandInteractionEvent event, EmbedBuilder eBuilder) {
-        if(ctx != null)
+        if (ctx != null)
             return respondToUser(ctx, eBuilder.build());
         else
             return event.getHook().sendMessageEmbeds(eBuilder.build()).setEphemeral(true).submit();
@@ -373,20 +375,38 @@ public class MessageUtils {
      * @return true if member has mentionable nickname, false otherwise
      */
     public boolean hasMentionableNickName(Member member) {
+        String nick = member.getEffectiveName();
         if (checkAuthority(member))
             return true;
-        String nick = member.getEffectiveName();
-        boolean whitelisted = fireStoreService.checkIfWhitelisted(member.getUser().getId(), nick);
-        if (whitelisted)
+
+        if (fireStoreService.checkIfWhitelisted(member.getUser().getId(), nick))
             return true;
 
+        StringBuilder filteredUsername = new StringBuilder();
         AtomicInteger mentionable = new AtomicInteger();
         nick.chars().forEach(c -> {
-            if (mentionableCharacters.contains(String.valueOf((char) c)))
+            if (mentionableCharacters.contains(String.valueOf((char) c))) {
+                filteredUsername.append((char) c);
                 mentionable.getAndIncrement();
+            } else {
+                filteredUsername.append(" ");
+            }
         });
         float percent = (float) (mentionable.get() * 100) / nick.length();
-        return percent > 75;
+        if (percent < 65) return false;
+
+        int maxSubNickLength = Arrays.stream(
+                        filteredUsername
+                                .toString()
+                                .strip()
+                                .split(" "))
+                .filter(s -> !s.isEmpty())
+                .map(String::length)
+                .max(Integer::compareTo)
+                .orElseGet(() -> 0);
+
+        percent = (float) (maxSubNickLength * 100) / mentionable.get();
+        return percent >= 33;
     }
 
 
@@ -396,21 +416,21 @@ public class MessageUtils {
      *
      * @param member Member to bobify
      */
-    public void bobify(Member member){
+    public void bobify(Member member) {
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setTitle("Nieoznaczalny nick");
         embedBuilder.addField("Nieoznaczalny nick", member.getEffectiveName(), false);
-        embedBuilder.setDescription("No cześć! Zdaje mi się, że Twój nick - **" + member.getEffectiveName() +"** - nie jest oznaczalny.\n" +
+        embedBuilder.setDescription("No cześć! Zdaje mi się, że Twój nick - **" + member.getEffectiveName() + "** - nie jest oznaczalny.\n" +
                 "Według punktu 5. regulaminu serwera, musisz zmienić swój nick.\n" +
                 "Na ten moment nazywasz się **BOB**. Jeżeli Ci to pasuje - zajebiście, będziemy się tak do Ciebie zwracać.\n"
                 + "Jeżeli jednak nie chcesz zostać do końca swojego życia Bobem, możesz w każdej chwili zmienić swój nick.\n");
         embedBuilder.setColor(Color.PINK);
         Button button = Button.primary("appeal", "Odwołaj się");
         MessageCreateData data = new MessageCreateBuilder().setEmbeds(embedBuilder.build()).setActionRow(button).build();
-        try{
+        try {
             member.modifyNickname("Bob").queue();
             openPrivateChannelAndMessageUser(member.getUser(), data);
-        }catch(Exception e){
+        } catch (Exception e) {
             System.err.println("User is higher in hierarchy than bot");
         }
     }
@@ -423,7 +443,7 @@ public class MessageUtils {
      * @param aliases
      * @return String of aliases separated by comma
      */
-    public String createAliasString(List<String> aliases){
+    public String createAliasString(List<String> aliases) {
         return aliases
                 .stream()
                 .map(s -> "`" + s + "`")
