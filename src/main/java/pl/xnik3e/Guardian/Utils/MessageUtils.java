@@ -244,6 +244,23 @@ public class MessageUtils {
 
 
     /**
+     * Sends message to user in private channel or in channel where command was invoked.
+     * <p></p>
+     *
+     * @param ctx      CommandContext to get member from
+     * @param event    SlashCommandInteractionEvent to get hook from
+     * @param message Message to send in form of MessageCreateData
+     */
+    public CompletableFuture<Message> respondToUser(CommandContext ctx, SlashCommandInteractionEvent event, MessageCreateData message) {
+        if (ctx != null)
+            return respondToUser(ctx, message);
+        else
+            return event.getHook().sendMessage(message).setEphemeral(true).submit();
+    }
+
+
+
+    /**
      * Get raw command content from MessageReceivedEvent when command is invoked.
      * <p></p>
      *

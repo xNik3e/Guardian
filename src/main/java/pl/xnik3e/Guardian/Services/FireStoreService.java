@@ -55,11 +55,11 @@ public class FireStoreService {
 
 
         firestore.collection("global_config").document("environment").addSnapshotListener((snapshot, e) -> {
-            if(e != null) {
+            if (e != null) {
                 System.err.println("Listen failed: " + e);
                 return;
             }
-            if(snapshot != null && snapshot.exists()) {
+            if (snapshot != null && snapshot.exists()) {
                 EnvironmentModel tempModel = snapshot.toObject(EnvironmentModel.class);
                 assert tempModel != null;
                 environmentModel.updateEnvironmentModel(tempModel);
@@ -105,14 +105,14 @@ public class FireStoreService {
     }
 
 
-    public void setTempBanModel(TempBanModel banModel){
+    public void setTempBanModel(TempBanModel banModel) {
         ApiFuture<WriteResult> future = firestore.collection("tempbans").document(banModel.getMessageId()).set(banModel);
-        if(future.isDone()){
+        if (future.isDone()) {
             System.out.println("Added tempban model");
         }
     }
 
-    public TempBanModel fetchBanModel(String messageId){
+    public TempBanModel fetchBanModel(String messageId) {
         ApiFuture<DocumentSnapshot> future = firestore.collection("tempbans").document(messageId).get();
         try {
             DocumentSnapshot document = future.get(5, TimeUnit.SECONDS);
@@ -122,43 +122,43 @@ public class FireStoreService {
         }
     }
 
-    public void deleteBanModel(String messageId){
+    public void deleteBanModel(String messageId) {
         ApiFuture<WriteResult> future = firestore.collection("tempbans").document(messageId).delete();
-        if(future.isDone()){
+        if (future.isDone()) {
             System.out.println("Deleted tempban model");
         }
     }
 
 
-    public List<TempBanModel> queryBans(){
+    public List<TempBanModel> queryBans() {
         long now = System.currentTimeMillis();
         List<TempBanModel> tempBanModels = new ArrayList<>();
         ApiFuture<QuerySnapshot> future = firestore.collection("tempbans").whereLessThan("banTime", now).get();
-        try{
+        try {
             future.get(10, TimeUnit.SECONDS).getDocuments().forEach(document -> {
                 TempBanModel tempBanModel = document.toObject(TempBanModel.class);
-                if(tempBanModel != null){
+                if (tempBanModel != null) {
                     tempBanModels.add(tempBanModel);
                 }
             });
             return tempBanModels;
-        }catch (Exception e){
-            return null;
-        }
-    }
-
-    public NickNameModel getNickNameModel(String userID){
-        ApiFuture<DocumentSnapshot> future = firestore.collection("whitelist").document(userID).get();
-        try{
-           return future.get(5, TimeUnit.SECONDS).toObject(NickNameModel.class);
         } catch (Exception e) {
             return null;
         }
     }
 
-    public boolean checkIfWhitelisted(String UID, String nickName){
+    public NickNameModel getNickNameModel(String userID) {
+        ApiFuture<DocumentSnapshot> future = firestore.collection("whitelist").document(userID).get();
+        try {
+            return future.get(5, TimeUnit.SECONDS).toObject(NickNameModel.class);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public boolean checkIfWhitelisted(String UID, String nickName) {
         ApiFuture<DocumentSnapshot> future = firestore.collection("whitelist").document(UID).get();
-        try{
+        try {
             DocumentSnapshot snapshot = future.get(5, TimeUnit.SECONDS);
             return snapshot.toObject(NickNameModel.class).getNickName().contains(nickName);
         } catch (Exception e) {
@@ -166,25 +166,25 @@ public class FireStoreService {
         }
     }
 
-    public void deleteNickNameModel(String userID){
+    public void deleteNickNameModel(String userID) {
         ApiFuture<WriteResult> future = firestore.collection("whitelist").document(userID).delete();
-        if(future.isDone()){
+        if (future.isDone()) {
             System.out.println("Deleted nickname model");
         }
     }
 
     public void addNickModel(NickNameModel model) {
         ApiFuture<WriteResult> future = firestore.collection("whitelist").document(model.getUserID()).set(model);
-        if(future.isDone()){
+        if (future.isDone()) {
             System.out.println("Added nickname model");
         }
     }
 
-    public void updateNickModel(NickNameModel model){
+    public void updateNickModel(NickNameModel model) {
         ApiFuture<DocumentSnapshot> future = firestore.collection("whitelist").document(model.getUserID()).get();
         try {
             NickNameModel nickModel = future.get(5, TimeUnit.SECONDS).toObject(NickNameModel.class);
-            if(nickModel != null && !nickModel.getNickName().contains(model.getNickName().get(0)))
+            if (nickModel != null && !nickModel.getNickName().contains(model.getNickName().get(0)))
                 nickModel.getNickName().add(model.getNickName().get(0));
 
             addNickModel(nickModel);
@@ -194,20 +194,18 @@ public class FireStoreService {
         }
     }
 
-    public List<String> getWhitelistedNicknames(String userID){
+    public List<String> getWhitelistedNicknames(String userID) {
         ApiFuture<DocumentSnapshot> future = firestore.collection("whitelist").document(userID).get();
-        try{
+        try {
             return future.get(5, TimeUnit.SECONDS).toObject(NickNameModel.class).getNickName();
         } catch (Exception e) {
             return new ArrayList<>();
         }
     }
 
-    public void setFetchedRoleUserList(List<FetchedRoleUserModel> fetchedRoleUserList){
+    public void setFetchedRoleUserList(List<FetchedRoleUserModel> fetchedRoleUserList) {
         new Thread(() -> {
-            int ordinal = 0;
-            for(FetchedRoleUserModel model : fetchedRoleUserList){
-                model.setOrdinal(++ordinal);
+            for (FetchedRoleUserModel model : fetchedRoleUserList) {
                 ApiFuture<DocumentReference> future = firestore.collection("cache")
                         .document("fetchedRoleUserList")
                         .collection("fetchedIds")
@@ -217,30 +215,30 @@ public class FireStoreService {
         }).start();
     }
 
-    public Optional<List<FetchedRoleUserModel>> fetchFetchedRoleUserList(int page){
-       List<FetchedRoleUserModel> fetchedRoleUserModels = new ArrayList<>();
-            ApiFuture<QuerySnapshot> future = firestore.collection("cache")
-                    .document("fetchedRoleUserList")
-                    .collection("fetchedIds")
-                    .orderBy("ordinal")
-                    .startAt((page-1) * 25)
-                    .endAt(page * 25)
-                    .get();
-            try{
-                future.get(5, TimeUnit.SECONDS).getDocuments().forEach(document -> {
-                    FetchedRoleUserModel model = document.toObject(FetchedRoleUserModel.class);
-                    if(model != null){
-                        fetchedRoleUserModels.add(model);
-                    }
-                });
-                fetchedRoleUserModels.sort(Comparator.comparing(FetchedRoleUserModel::getOrdinal));
-                return Optional.of(fetchedRoleUserModels);
-            }catch (Exception e){
-                return Optional.empty();
-            }
+    public Optional<List<FetchedRoleUserModel>> fetchFetchedRoleUserList(int page) {
+        List<FetchedRoleUserModel> fetchedRoleUserModels = new ArrayList<>();
+        ApiFuture<QuerySnapshot> future = firestore.collection("cache")
+                .document("fetchedRoleUserList")
+                .collection("fetchedIds")
+                .orderBy("ordinal")
+                .startAt((page - 1) * 25)
+                .endAt(page * 25)
+                .get();
+        try {
+            future.get(5, TimeUnit.SECONDS).getDocuments().forEach(document -> {
+                FetchedRoleUserModel model = document.toObject(FetchedRoleUserModel.class);
+                if (model != null) {
+                    fetchedRoleUserModels.add(model);
+                }
+            });
+            fetchedRoleUserModels.sort(Comparator.comparing(FetchedRoleUserModel::getOrdinal));
+            return Optional.of(fetchedRoleUserModels);
+        } catch (Exception e) {
+            return Optional.empty();
+        }
     }
 
-    public void deleteFetchedRoleUserList(String messageID){
+    public void deleteFetchedRoleUserList(String messageID) {
         new Thread(() -> {
             ApiFuture<QuerySnapshot> future = firestore.collection("cache")
                     .document("fetchedRoleUserList")
@@ -255,5 +253,20 @@ public class FireStoreService {
                 System.err.println("Error deleting fetchedRoleUserList");
             }
         }).start();
+    }
+
+    public void autoDeleteFetchedRoleUser() {
+        ApiFuture<QuerySnapshot> future = firestore.collection("cache")
+                .document("fetchedRoleUserList")
+                .collection("fetchedIds")
+                .whereLessThan("timestamp", System.currentTimeMillis())
+                .get();
+        try {
+            future.get().forEach(document -> {
+                document.getReference().delete();
+            });
+        } catch (Exception e) {
+            System.err.println("Error deleting fetchedRoleUserList");
+        }
     }
 }

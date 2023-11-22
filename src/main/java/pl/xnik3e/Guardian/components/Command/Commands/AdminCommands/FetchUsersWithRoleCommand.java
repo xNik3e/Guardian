@@ -1,21 +1,24 @@
 package pl.xnik3e.Guardian.components.Command.Commands.AdminCommands;
 
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.MessageEmbed;
-import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.utils.concurrent.Task;
+import net.dv8tion.jda.api.utils.messages.MessageEditBuilder;
+import pl.xnik3e.Guardian.Models.FetchedRoleUserModel;
 import pl.xnik3e.Guardian.Services.FireStoreService;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
 import pl.xnik3e.Guardian.components.Command.CommandContext;
 import pl.xnik3e.Guardian.components.Command.ICommand;
 
 import javax.annotation.Nullable;
+
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -100,15 +103,46 @@ public class FetchUsersWithRoleCommand implements ICommand {
             }
             Task<List<Member>> task = guild.findMembersWithRoles(role);
             task.onSuccess(members -> {
-                eBuilder.setTitle("Fetching complete");
-                eBuilder.setDescription("Users with role: " + role.getName());
+                eBuilder.setTitle("Fetching role *" + role.getName() + "* users");
+                eBuilder.setDescription("Please wait, this may take a while");
+                List<FetchedRoleUserModel> fetchedUsers = new ArrayList<>();
+                AtomicInteger ordinal = new AtomicInteger(1);
                 members.forEach(member -> {
                     if(messageUtils.performMemberCheck(member)) return;
-                    eBuilder.addField(member.getUser().getName(), member.getUser().getId() + "\n" + member.getUser().getAsMention(), true);
-
+                    FetchedRoleUserModel fetchedUser = FetchedRoleUserModel.builder()
+                            .userID(member.getUser().getId())
+                            .ordinal(ordinal.getAndIncrement())
+                            .timestamp(System.currentTimeMillis() + 1000 * 60 * 60 * 24)
+                            .value(member.getEffectiveName() + "\n"+member.getAsMention())
+                            .build();
+                    fetchedUsers.add(fetchedUser);
                 });
-                eBuilder.setColor(Color.GREEN);
-                messageUtils.respondToUser(ctx, event, eBuilder);
+                eBuilder.setColor(Color.YELLOW);
+                CompletableFuture<Message> future = messageUtils.respondToUser(ctx, event, eBuilder);
+                future.thenAccept(message -> {
+                    MessageEditBuilder editBuilder = new MessageEditBuilder();
+                    fetchedUsers.forEach(fetchedRoleUserModel -> {
+                        fetchedRoleUserModel.setMessageID(message.getId());
+                    });
+                    fireStoreService.setFetchedRoleUserList(fetchedUsers);
+                    eBuilder.setTitle("Fetched role *" + role.getName() + "* users");
+                    eBuilder.setDescription("I've found **" + fetchedUsers.size() + "** users with role **" + role.getName() + "**");
+                    List<FetchedRoleUserModel> temp = new ArrayList<>();
+                    if(fetchedUsers.size() > 25){
+                        temp.addAll(fetchedUsers.subList(0, 25));
+                        eBuilder.setFooter("Showing page {**1/" + ((fetchedUsers.size() /25) + 1)   + "**} for [Fetch]");
+                        Button button = Button.primary("next", "Next page");
+                        editBuilder.setActionRow(button);
+                    }else{
+                        temp.addAll(fetchedUsers);
+                    }
+                    temp.forEach(fetchedRoleUserModel -> {
+                        eBuilder.addField(fetchedRoleUserModel.getUserID(), fetchedRoleUserModel.getValue(), true);
+                    });
+                    eBuilder.setColor(Color.GREEN);
+                    editBuilder.setEmbeds(eBuilder.build());
+                    event.getHook().editOriginal(editBuilder.build()).queue();
+                });
             });
         }else{
             eBuilder.setDescription("You should only provide single role Id or role mention");
