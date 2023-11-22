@@ -125,6 +125,10 @@ public class SlashCommandInteractionListener extends ListenerAdapter {
                 }
                 manager.handle(event, command.toString());
                 break;
+                case "curse":
+                command.append("curse");
+                manager.handle(event, command.toString());
+                break;
             default:
                 event.getHook().sendMessage("Command not found").setEphemeral(true).queue();
 

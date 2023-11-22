@@ -382,6 +382,8 @@ public class MessageUtils {
         if (fireStoreService.checkIfWhitelisted(member.getUser().getId(), nick))
             return true;
 
+        float mentionableCharsPercent = fireStoreService.getModel().getMentionableCharsPercent();
+        float mentionableSegmentRatio = fireStoreService.getModel().getMentionableSegmentRatio();
         StringBuilder filteredUsername = new StringBuilder();
         AtomicInteger mentionable = new AtomicInteger();
         nick.chars().forEach(c -> {
@@ -393,7 +395,7 @@ public class MessageUtils {
             }
         });
         float percent = (float) (mentionable.get() * 100) / nick.length();
-        if (percent < 65) return false;
+        if (percent < mentionableCharsPercent) return false;
 
         int maxSubNickLength = Arrays.stream(
                         filteredUsername
@@ -406,7 +408,7 @@ public class MessageUtils {
                 .orElseGet(() -> 0);
 
         percent = (float) (maxSubNickLength * 100) / mentionable.get();
-        return percent >= 33;
+        return percent >= mentionableSegmentRatio;
     }
 
 

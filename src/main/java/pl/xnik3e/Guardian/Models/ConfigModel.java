@@ -19,11 +19,14 @@ public class ConfigModel {
     private List<String> excludedUserIds;
     private List<String> rolesToDelete;
 
-
-
     private String channelIdToSendLog;
     private String channelIdToSendEchoLog;
     private String channelIdToSendDeletedMessages;
+
+    private String defaultRoleId;
+
+    private float mentionableCharsPercent = 65f;
+    private float mentionableSegmentRatio = 33f;
 
     public ConfigModel() {
         this.excludedChannelIds = new ArrayList<>(); //Channels to exclude from operating
@@ -44,6 +47,11 @@ public class ConfigModel {
         this.channelIdToSendLog = model.channelIdToSendLog;
         this.channelIdToSendEchoLog = model.channelIdToSendEchoLog;
         this.channelIdToSendDeletedMessages = model.channelIdToSendDeletedMessages;
+
+        this.defaultRoleId = model.defaultRoleId;
+
+        this.mentionableCharsPercent = model.mentionableCharsPercent;
+        this.mentionableSegmentRatio = model.mentionableSegmentRatio;
 
         this.excludedRoleIds.clear();
         this.excludedRoleIds.addAll(model.excludedRoleIds);
@@ -69,6 +77,10 @@ public class ConfigModel {
         this.channelIdToSendDeletedMessages = ""; //TODO: TEMP CHANGE LATER
         this.channelIdToSendEchoLog = ""; //TODO: TEMP CHANGE LATER
 
+        this.defaultRoleId = "1174464585391157410"; //TODO: TEMP CHANGE LATER TO 1059877981776003233
+
+        this.mentionableCharsPercent = 65f;
+        this.mentionableSegmentRatio = 33f;
 
         this.excludedChannelIds.clear();
         this.excludedRoleIds.clear();
