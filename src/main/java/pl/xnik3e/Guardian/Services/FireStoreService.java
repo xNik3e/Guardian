@@ -6,15 +6,11 @@ import com.google.cloud.firestore.annotation.DocumentId;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import pl.xnik3e.Guardian.Models.ConfigModel;
-import pl.xnik3e.Guardian.Models.EnvironmentModel;
-import pl.xnik3e.Guardian.Models.NickNameModel;
-import pl.xnik3e.Guardian.Models.TempBanModel;
+import pl.xnik3e.Guardian.Models.*;
 
 import javax.print.Doc;
 import java.rmi.server.UID;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -205,5 +201,59 @@ public class FireStoreService {
         } catch (Exception e) {
             return new ArrayList<>();
         }
+    }
+
+    public void setFetchedRoleUserList(List<FetchedRoleUserModel> fetchedRoleUserList){
+        new Thread(() -> {
+            int ordinal = 0;
+            for(FetchedRoleUserModel model : fetchedRoleUserList){
+                model.setOrdinal(++ordinal);
+                ApiFuture<DocumentReference> future = firestore.collection("cache")
+                        .document("fetchedRoleUserList")
+                        .collection("fetchedIds")
+                        .add(model);
+            }
+            System.out.println("Added fetched IDs");
+        }).start();
+    }
+
+    public Optional<List<FetchedRoleUserModel>> fetchFetchedRoleUserList(int page){
+       List<FetchedRoleUserModel> fetchedRoleUserModels = new ArrayList<>();
+            ApiFuture<QuerySnapshot> future = firestore.collection("cache")
+                    .document("fetchedRoleUserList")
+                    .collection("fetchedIds")
+                    .orderBy("ordinal")
+                    .startAt((page-1) * 25)
+                    .endAt(page * 25)
+                    .get();
+            try{
+                future.get(5, TimeUnit.SECONDS).getDocuments().forEach(document -> {
+                    FetchedRoleUserModel model = document.toObject(FetchedRoleUserModel.class);
+                    if(model != null){
+                        fetchedRoleUserModels.add(model);
+                    }
+                });
+                fetchedRoleUserModels.sort(Comparator.comparing(FetchedRoleUserModel::getOrdinal));
+                return Optional.of(fetchedRoleUserModels);
+            }catch (Exception e){
+                return Optional.empty();
+            }
+    }
+
+    public void deleteFetchedRoleUserList(String messageID){
+        new Thread(() -> {
+            ApiFuture<QuerySnapshot> future = firestore.collection("cache")
+                    .document("fetchedRoleUserList")
+                    .collection("fetchedIds")
+                    .whereEqualTo("messageID", messageID)
+                    .get();
+            try {
+                future.get(5, TimeUnit.SECONDS).getDocuments().forEach(document -> {
+                    document.getReference().delete();
+                });
+            } catch (Exception e) {
+                System.err.println("Error deleting fetchedRoleUserList");
+            }
+        }).start();
     }
 }
