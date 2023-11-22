@@ -12,6 +12,7 @@ import pl.xnik3e.Guardian.components.Command.ICommand;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -146,7 +147,7 @@ public class BanUsersWithRoleCommand implements ICommand {
             messageUtils.respondToUser(ctx, event,  eBuilder.setTitle("Banning users")
                     .setDescription("Banning users with role: **" + role.getName() + "**")
                     .setColor(Color.GREEN));
-            messageUtils.banUsers(toBeBannedIds, guild);
+            messageUtils.banUsers(toBeBannedIds, guild, 365, TimeUnit.DAYS, "Niespełnianie wymagań wiekowych", true);
         });
     }
 

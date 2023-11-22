@@ -21,21 +21,24 @@ public class UnbanButton implements IButton {
 
     @Override
     public void handle(ButtonInteractionEvent event) {
-        String messageId = event.getMessageId();
-        Message message = event.getMessage();
         event.deferEdit().queue();
-        TempBanModel tempBanModel = fireStoreService.fetchBanModel(messageId);
-        if (tempBanModel != null) {
-            event.getGuild().unban(UserSnowflake.fromId(tempBanModel.getUserId())).queue(s -> {
-                message.delete().queue();
-                fireStoreService.deleteBanModel(messageId);
-                MessageChannel logChannel = event.getGuild().getChannelById(MessageChannel.class, fireStoreService.getModel().getChannelIdToSendLog());
-                if (logChannel != null) {
-                    logChannel.sendMessage("User " + tempBanModel.getUserId() + " has been unbanned").queue();
-                }
-            }, f -> {
-                messageUtils.openPrivateChannelAndMessageUser(event.getUser(), "Something went wrong");
-            });
+        if(messageUtils.checkAuthority(event.getMember())){
+            String messageId = event.getMessageId();
+            Message message = event.getMessage();
+
+            TempBanModel tempBanModel = fireStoreService.fetchBanModel(messageId);
+            if (tempBanModel != null) {
+                event.getGuild().unban(UserSnowflake.fromId(tempBanModel.getUserId())).queue(s -> {
+                    message.delete().queue();
+                    fireStoreService.deleteBanModel(messageId);
+                    MessageChannel logChannel = event.getGuild().getChannelById(MessageChannel.class, fireStoreService.getModel().getChannelIdToSendLog());
+                    if (logChannel != null) {
+                        logChannel.sendMessage("User " + tempBanModel.getUserId() + " has been unbanned").queue();
+                    }
+                }, f -> {
+                    messageUtils.openPrivateChannelAndMessageUser(event.getUser(), "Something went wrong");
+                });
+            }
         }
     }
 

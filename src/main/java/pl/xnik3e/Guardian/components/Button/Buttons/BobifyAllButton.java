@@ -24,27 +24,29 @@ public class BobifyAllButton implements IButton {
     @Override
     public void handle(ButtonInteractionEvent event) {
         event.deferEdit().queue();
-        Message message = event.getMessage();
-        MessageEmbed embed = message.getEmbeds().get(0);
-        embed.getFields().forEach(field -> {
-            String UID = field.getValue();
-            event.getGuild().retrieveMemberById(UID).queue(member ->{
-                if(messageUtils.checkAuthority(member))
-                    return;
-                NickNameModel model = fireStoreService.getNickNameModel(member.getId());
-                if(model != null){
-                    model.getNickName().remove(member.getEffectiveName());
-                    fireStoreService.updateNickModel(model);
-                }
-                messageUtils.bobify(member);
+        if(messageUtils.checkAuthority(event.getMember())){
+            Message message = event.getMessage();
+            MessageEmbed embed = message.getEmbeds().get(0);
+            embed.getFields().forEach(field -> {
+                String UID = field.getValue();
+                event.getGuild().retrieveMemberById(UID).queue(member ->{
+                    if(messageUtils.checkAuthority(member))
+                        return;
+                    NickNameModel model = fireStoreService.getNickNameModel(member.getId());
+                    if(model != null){
+                        model.getNickName().remove(member.getEffectiveName());
+                        fireStoreService.updateNickModel(model);
+                    }
+                    messageUtils.bobify(member);
+                });
             });
-        });
-        event.getHook().editOriginalComponents().queue();
-        event.getHook().editOriginalEmbeds(new EmbedBuilder()
-                .setTitle("Success")
-                .setDescription("Bobified all users")
-                .setColor(Color.GREEN)
-                .build()).queue();
+            event.getHook().editOriginalComponents().queue();
+            event.getHook().editOriginalEmbeds(new EmbedBuilder()
+                    .setTitle("Success")
+                    .setDescription("Bobified all users")
+                    .setColor(Color.GREEN)
+                    .build()).queue();
+        }
     }
 
     @Override

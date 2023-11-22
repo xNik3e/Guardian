@@ -27,6 +27,7 @@ public class SlashCommandUpdater {
                                         .addChoice("Blacklist provided nickname id for specific user", "bl")
                                         .addChoice("Get users with non-mentionable nickname", "gb")
                                         .addChoice("Bobify provided nickname id for specific user", "bf")
+                                        .addChoice("Ban users that don't have **kultysta** role from the existence", "curse")
                         ),
                 Commands.slash("init", "Init the bot")
                         .addOptions(
@@ -58,7 +59,8 @@ public class SlashCommandUpdater {
                 Commands.slash("bobify", "Bobify provided nickname id for specific user")
                         .addOptions(
                                 new OptionData(OptionType.STRING, "id", "Nickname id or mention to bobify specific user or **ALL** to bobify all", true)
-                        )
+                        ),
+                Commands.slash("curse", "Ban users that don't have **kultysta** role from the existence")
         ).queue();
     }
 }

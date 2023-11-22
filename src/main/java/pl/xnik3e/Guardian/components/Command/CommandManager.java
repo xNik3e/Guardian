@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
 import pl.xnik3e.Guardian.components.Command.Commands.AdminCommands.BanUsersWithRoleCommand;
+import pl.xnik3e.Guardian.components.Command.Commands.AdminCommands.CurseCommand;
 import pl.xnik3e.Guardian.components.Command.Commands.AdminCommands.FetchUsersWithRoleCommand;
 import pl.xnik3e.Guardian.components.Command.Commands.BobCommands.GetBobCommand;
 import pl.xnik3e.Guardian.components.Command.Commands.BobCommands.BobifyCommand;
@@ -141,5 +142,6 @@ public class CommandManager {
         addCommand(new NickBlackListCommand(messageUtils));
         addCommand(new GetBobCommand(messageUtils));
         addCommand(new BobifyCommand(messageUtils));
+        addCommand(new CurseCommand(messageUtils));
     }
 }

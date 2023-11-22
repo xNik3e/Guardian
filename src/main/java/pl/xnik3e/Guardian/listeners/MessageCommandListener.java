@@ -51,7 +51,7 @@ public class MessageCommandListener extends ListenerAdapter {
             return;
         }
 
-        if (messageUtils.checkTrigger(event)) {
+        if (messageUtils.checkTrigger(event) && messageUtils.checkAuthority(event.getMember())) {
             commandManager.handle(event);
         }
     }
