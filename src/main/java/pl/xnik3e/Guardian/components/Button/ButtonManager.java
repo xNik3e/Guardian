@@ -65,5 +65,6 @@ public class ButtonManager {
         addButton(new UserAppealAcceptButton(messageUtils));
         addButton(new UserAppealRejectButton(messageUtils));
         addButton(new BobifyAllButton(messageUtils));
+        addButton(new CurseButton(messageUtils));
     }
 }

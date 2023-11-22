@@ -101,7 +101,7 @@ public class CurseCommand implements ICommand {
             Message message = future.join();
             eBuilder.setTitle("Evil spirits");
             eBuilder.setDescription("The following members are not blessed with the **kultysta** role");
-            members.forEach(member -> eBuilder.addField(member.getId(), member.getEffectiveName(), true));
+            members.forEach(member -> eBuilder.addField(member.getId(), member.getEffectiveName() +"\n" + member.getAsMention(), true));
             eBuilder.setColor(Color.GREEN);
             Button button = Button.danger("curse", "Curse them!");
             MessageEditData messageCreateData = new MessageEditBuilder().setEmbeds(eBuilder.build()).setActionRow(button).build();

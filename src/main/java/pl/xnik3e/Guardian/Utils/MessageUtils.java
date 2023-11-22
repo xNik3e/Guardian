@@ -271,14 +271,15 @@ public class MessageUtils {
      * @param toBeBannedIds List of users to be banned
      * @param guild         Guild to ban users from
      */
-    public void banUsers(List<String> toBeBannedIds, Guild guild) {
+    public void banUsers(List<String> toBeBannedIds, Guild guild, int time, TimeUnit timeUnit, String reason, boolean tempBan) {
         MessageChannel channel = guild.getChannelById(MessageChannel.class, fireStoreService.getModel().getChannelIdToSendDeletedMessages());
         MessageChannel logChannel = guild.getChannelById(MessageChannel.class, fireStoreService.getModel().getChannelIdToSendLog());
         MessageChannel echoChannel = guild.getChannelById(MessageChannel.class, fireStoreService.getModel().getChannelIdToSendEchoLog());
 
         toBeBannedIds.forEach(id -> {
                     guild.retrieveMemberById(id).queue(member -> {
-                        tempBanUser(member.getUser(), channel, guild, 365, TimeUnit.DAYS, "Niespełnianie wymagań wiekowych");
+                        if(tempBan) tempBanUser(member.getUser(), channel, guild, time, timeUnit, reason.isEmpty() ? "" : reason);
+                        //else guild.ban(member.getUser(), 0, TimeUnit.SECONDS).reason(reason).queue();
                         StringBuilder sb = new StringBuilder();
                         sb
                                 .append("<@")
@@ -286,8 +287,11 @@ public class MessageUtils {
                                 .append("> - ")
                                 .append(member.getUser().getName())
                                 .append(" - ")
-                                .append("tempban rok")
-                                .append(" - ").append("niespełnianie wymagań wiekowych");
+                                .append(tempBan ? "tempban " : "ban ")
+                                .append(time)
+                                .append(" ")
+                                .append(timeUnit.toString())
+                                .append(" - ").append(reason.isEmpty() ? "No reason" : reason);
                         if (logChannel != null)
                             logChannel.sendMessage(sb.toString()).queue();
                         if (echoChannel != null)
