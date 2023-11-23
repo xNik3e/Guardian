@@ -215,17 +215,17 @@ public class FireStoreService {
         }).start();
     }
 
-    public Optional<List<FetchedRoleUserModel>> fetchFetchedRoleUserList(int page) {
+    public Optional<List<FetchedRoleUserModel>> fetchFetchedRoleUserList(int page, int maxUsers) {
         List<FetchedRoleUserModel> fetchedRoleUserModels = new ArrayList<>();
         ApiFuture<QuerySnapshot> future = firestore.collection("cache")
                 .document("fetchedRoleUserList")
                 .collection("fetchedIds")
+                .whereGreaterThanOrEqualTo("ordinal", (page - 1) * maxUsers)
+                .whereLessThan("ordinal", page * maxUsers)
                 .orderBy("ordinal")
-                .startAt((page - 1) * 25)
-                .endAt(page * 25)
                 .get();
         try {
-            future.get(5, TimeUnit.SECONDS).getDocuments().forEach(document -> {
+            future.get(10, TimeUnit.SECONDS).getDocuments().forEach(document -> {
                 FetchedRoleUserModel model = document.toObject(FetchedRoleUserModel.class);
                 if (model != null) {
                     fetchedRoleUserModels.add(model);
@@ -234,6 +234,7 @@ public class FireStoreService {
             fetchedRoleUserModels.sort(Comparator.comparing(FetchedRoleUserModel::getOrdinal));
             return Optional.of(fetchedRoleUserModels);
         } catch (Exception e) {
+            e.printStackTrace();
             return Optional.empty();
         }
     }
@@ -252,6 +253,24 @@ public class FireStoreService {
             } catch (Exception e) {
                 System.err.println("Error deleting fetchedRoleUserList");
             }
+        }).start();
+    }
+
+    public void deleteFetchedRoleUserListBeforeNow(){
+        new Thread(() -> {
+            ApiFuture<QuerySnapshot> future = firestore.collection("cache")
+                    .document("fetchedRoleUserList")
+                    .collection("fetchedIds")
+                    .whereLessThan("timestamp", (System.currentTimeMillis() + 1000 * 60 * 5))
+                    .get();
+            try {
+                future.get(5, TimeUnit.SECONDS).getDocuments().forEach(document -> {
+                    document.getReference().delete();
+                });
+            } catch (Exception e) {
+                System.err.println("Error deleting fetchedRoleUserList");
+            }
+            System.out.println("Deleted fetchedRoleUserList");
         }).start();
     }
 

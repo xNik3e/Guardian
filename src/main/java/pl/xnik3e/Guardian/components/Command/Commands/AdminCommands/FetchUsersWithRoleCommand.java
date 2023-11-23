@@ -24,6 +24,7 @@ import java.util.regex.Pattern;
 
 public class FetchUsersWithRoleCommand implements ICommand {
 
+    public static final int MAX_USERS = 25;
     private final MessageUtils messageUtils;
     private final FireStoreService fireStoreService;
 
@@ -103,16 +104,19 @@ public class FetchUsersWithRoleCommand implements ICommand {
             }
             Task<List<Member>> task = guild.findMembersWithRoles(role);
             task.onSuccess(members -> {
+                fireStoreService.deleteFetchedRoleUserListBeforeNow();
                 eBuilder.setTitle("Fetching role *" + role.getName() + "* users");
                 eBuilder.setDescription("Please wait, this may take a while");
                 List<FetchedRoleUserModel> fetchedUsers = new ArrayList<>();
-                AtomicInteger ordinal = new AtomicInteger(1);
+                AtomicInteger ordinal = new AtomicInteger();
                 members.forEach(member -> {
                     if(messageUtils.performMemberCheck(member)) return;
                     FetchedRoleUserModel fetchedUser = FetchedRoleUserModel.builder()
                             .userID(member.getUser().getId())
+                            .roleID(role.getId())
+                            .roleName(role.getName())
                             .ordinal(ordinal.getAndIncrement())
-                            .timestamp(System.currentTimeMillis() + 1000 * 60 * 60 * 24)
+                            .timestamp(System.currentTimeMillis() + 1000 * 60 * 5)
                             .value(member.getEffectiveName() + "\n"+member.getAsMention())
                             .build();
                     fetchedUsers.add(fetchedUser);
@@ -123,15 +127,17 @@ public class FetchUsersWithRoleCommand implements ICommand {
                     MessageEditBuilder editBuilder = new MessageEditBuilder();
                     fetchedUsers.forEach(fetchedRoleUserModel -> {
                         fetchedRoleUserModel.setMessageID(message.getId());
+                        fetchedRoleUserModel.setAllEntries(fetchedUsers.size());
                     });
                     fireStoreService.setFetchedRoleUserList(fetchedUsers);
                     eBuilder.setTitle("Fetched role *" + role.getName() + "* users");
                     eBuilder.setDescription("I've found **" + fetchedUsers.size() + "** users with role **" + role.getName() + "**");
+                    eBuilder.appendDescription("\n\n**CACHED DATA WILL BE DELETED IN 5 MINUTES**\n\n");
                     List<FetchedRoleUserModel> temp = new ArrayList<>();
-                    if(fetchedUsers.size() > 25){
-                        temp.addAll(fetchedUsers.subList(0, 25));
-                        eBuilder.setFooter("Showing page {**1/" + ((fetchedUsers.size() /25) + 1)   + "**} for [Fetch]");
-                        Button button = Button.primary("next", "Next page");
+                    if(fetchedUsers.size() > MAX_USERS){
+                        temp.addAll(fetchedUsers.subList(0, MAX_USERS));
+                        eBuilder.setFooter("Showing page {**1/" + ((fetchedUsers.size() /MAX_USERS) + 1)   + "**} for [Fetch]");
+                        Button button = Button.primary("nextPage", "Next page");
                         editBuilder.setActionRow(button);
                     }else{
                         temp.addAll(fetchedUsers);
@@ -141,7 +147,7 @@ public class FetchUsersWithRoleCommand implements ICommand {
                     });
                     eBuilder.setColor(Color.GREEN);
                     editBuilder.setEmbeds(eBuilder.build());
-                    event.getHook().editOriginal(editBuilder.build()).queue();
+                    messageUtils.editOryginalMessage(message, event, editBuilder.build());
                 });
             });
         }else{

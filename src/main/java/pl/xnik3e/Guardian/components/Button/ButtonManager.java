@@ -55,6 +55,7 @@ public class ButtonManager {
             event.deferReply(true).addEmbeds(embed.build()).queue();
             return;
         }
+        event.deferReply(true).queue();
         new Thread(() -> button.handle(event)).start();
     }
 
@@ -66,5 +67,6 @@ public class ButtonManager {
         addButton(new UserAppealRejectButton(messageUtils));
         addButton(new BobifyAllButton(messageUtils));
         addButton(new CurseButton(messageUtils));
+        addButton(new NextPageButton(messageUtils));
     }
 }

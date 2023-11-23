@@ -10,6 +10,7 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
+import net.dv8tion.jda.api.utils.messages.MessageEditData;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -258,6 +259,32 @@ public class MessageUtils {
             return event.getHook().sendMessage(message).setEphemeral(true).submit();
     }
 
+    /**
+     * Edits original message in private channel or in channel where command was invoked.
+     * <p></p>
+     *
+     * @param originalMessage Message to edit
+     * @param event    SlashCommandInteractionEvent to get hook from
+     * @param message Message to send in form of MessageCreateData
+     */
+    public CompletableFuture<Message> editOryginalMessage(Message originalMessage, SlashCommandInteractionEvent event, MessageEditData message) {
+        if (event == null)
+            return editUserMessage(originalMessage, message);
+        else{
+            event.getHook().editOriginalEmbeds().queue();
+            return event.getHook().editOriginal(message).submit();
+        }
+    }
+
+    private CompletableFuture<Message> editUserMessage(Message originalMessage, MessageEditData message) {
+        try{
+            return originalMessage.editMessage(message).submit();
+        }catch (Exception e){
+            e.printStackTrace();
+            return null;
+        }
+
+    }
 
 
     /**
