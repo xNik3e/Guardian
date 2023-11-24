@@ -9,11 +9,9 @@ import java.util.Map;
 import java.util.List;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class FetchedRoleModel extends BasicCacheModel{
+public class ToBobifyMembersModel extends BasicCacheModel{
     private List<Map<String, String>> users;
-    private String roleID;
-    private String roleName;
-
 }
