@@ -21,7 +21,7 @@ public class CurseButton implements IButton {
 
     @Override
     public void handle(ButtonInteractionEvent event) {
-        event.deferReply(true).queue();
+        event.deferReply().queue();
         if(!messageUtils.checkAuthority(event.getMember()))
             return;
         List<String> ids = new ArrayList<>();

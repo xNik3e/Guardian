@@ -26,7 +26,7 @@ import java.util.regex.Pattern;
 
 public class FetchUsersWithRoleCommand implements ICommand {
 
-    public static final int MAX_USERS = 5;
+    public static final int MAX_USERS = 25;
     private final MessageUtils messageUtils;
     private final FireStoreService fireStoreService;
 
