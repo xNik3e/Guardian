@@ -6,12 +6,14 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 import net.dv8tion.jda.api.utils.messages.MessageEditData;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import pl.xnik3e.Guardian.Models.ConfigModel;
@@ -501,6 +503,25 @@ public class MessageUtils {
                 .reduce((s, s2) -> s + ", " + s2)
                 .orElseGet(() -> "No aliases");
 
+    }
+
+    /**
+     * Get member from ButtonInteractionEvent.
+     * If event is not from guild, get member from user id.
+     * <p></p>
+     *
+     * @param event ButtonInteractionEvent to get member from
+     * @return String of aliases separated by comma
+     */
+    @Nullable
+    public Member getMemberFromButtonEvent(ButtonInteractionEvent event) {
+        Member member = event.getMember();
+        if(event.getGuild() == null){
+            User user = event.getInteraction().getUser();
+            Guild guild = event.getJDA().getGuildById(fireStoreService.getEnvironmentModel().getGUILD_ID());
+            member = guild.retrieveMemberById(user.getId()).complete();
+        }
+        return member;
     }
 
 }

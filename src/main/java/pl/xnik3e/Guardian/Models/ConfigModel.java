@@ -25,8 +25,10 @@ public class ConfigModel {
 
     private String defaultRoleId;
 
-    private float mentionableCharsPercent = 65f;
-    private float mentionableSegmentRatio = 33f;
+    private float mentionableCharsPercent;
+    private float mentionableSegmentRatio;
+
+    private int maxElementsInEmbed;
 
     public ConfigModel() {
         this.excludedChannelIds = new ArrayList<>(); //Channels to exclude from operating
@@ -52,6 +54,7 @@ public class ConfigModel {
 
         this.mentionableCharsPercent = model.mentionableCharsPercent;
         this.mentionableSegmentRatio = model.mentionableSegmentRatio;
+        this.maxElementsInEmbed = model.maxElementsInEmbed;
 
         this.excludedRoleIds.clear();
         this.excludedRoleIds.addAll(model.excludedRoleIds);
@@ -81,6 +84,7 @@ public class ConfigModel {
 
         this.mentionableCharsPercent = 65f;
         this.mentionableSegmentRatio = 33f;
+        this.maxElementsInEmbed = 25;
 
         this.excludedChannelIds.clear();
         this.excludedRoleIds.clear();
