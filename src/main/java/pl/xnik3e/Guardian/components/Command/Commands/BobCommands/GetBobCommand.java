@@ -2,31 +2,38 @@ package pl.xnik3e.Guardian.components.Command.Commands.BobCommands;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
-import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 import net.dv8tion.jda.api.utils.messages.MessageEditBuilder;
+import pl.xnik3e.Guardian.Models.ToBobifyMembersModel;
 import pl.xnik3e.Guardian.Services.FireStoreService;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
 import pl.xnik3e.Guardian.components.Command.CommandContext;
 import pl.xnik3e.Guardian.components.Command.ICommand;
 
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 public class GetBobCommand implements ICommand {
 
+    private final int MAX_USERS;
     private final FireStoreService fireStoreService;
     private final MessageUtils messageUtils;
 
     public GetBobCommand(MessageUtils messageUtils) {
         this.messageUtils = messageUtils;
         this.fireStoreService = messageUtils.getFireStoreService();
+        this.MAX_USERS = fireStoreService.getModel().getMaxElementsInEmbed();
     }
 
     @Override
@@ -84,11 +91,7 @@ public class GetBobCommand implements ICommand {
 
     private void getBob(CommandContext ctx, SlashCommandInteractionEvent event, List<String> args, Guild guild) {
         EmbedBuilder embedBuilder = new EmbedBuilder();
-        EmbedBuilder defaultEmbedBuilder = new EmbedBuilder();
-        defaultEmbedBuilder.setTitle("Please wait");
-        defaultEmbedBuilder.setDescription("Fetching data from database. This operation is resource heavy and may take a while");
-        defaultEmbedBuilder.addField("On success", "I will edit this message when list is ready", false);
-        defaultEmbedBuilder.setColor(Color.YELLOW);
+        EmbedBuilder defaultEmbedBuilder = getDefaultEmbedBuilder();
         try {
             Message oryginalMessage = messageUtils.respondToUser(ctx, event, defaultEmbedBuilder).get(5, TimeUnit.SECONDS);
             if (!args.isEmpty()) {
@@ -98,18 +101,40 @@ public class GetBobCommand implements ICommand {
                 messageUtils.respondToUser(ctx, event, embedBuilder);
                 return;
             }
-            embedBuilder.setTitle("Bob list");
-            embedBuilder.setDescription("List of users which username are marked as not being mentionable");
             guild.findMembers(member -> !messageUtils.hasMentionableNickName(member))
                     .onSuccess(members -> {
+                        MessageCreateBuilder messageCreateBuilder = new MessageCreateBuilder();
+                        fireStoreService.deleteToBobifyMembersBeforeNow();
+                        List<Map<String, String>> maps = new ArrayList<>();
+                        List<Map<String, String>> temp = new ArrayList<>();
+                        AtomicInteger ordinal = new AtomicInteger();
+
+                        ToBobifyMembersModel model = new ToBobifyMembersModel();
+                        model.setTimestamp(System.currentTimeMillis() + 1000 * 60 * 5);
+
                         members.forEach(member -> {
-                            embedBuilder.addField(member.getEffectiveName(), member.getId(), true);
+                            mapMember(member, ordinal, maps);
                         });
+                        model.setUsers(maps);
+                        model.setAllEntries(maps.size());
+                        model.setMessageID(oryginalMessage.getId());
+                        fireStoreService.setToBobifyMembers(model);
+
+                        embedBuilder.setTitle("Bob list");
+                        embedBuilder.setDescription("List of users which username are marked as not being mentionable");
+                        embedBuilder.appendDescription("\nTo Bobify specific user use `" + fireStoreService.getModel().getPrefix() + "bobify <userID>` command");
                         embedBuilder.setColor(Color.GREEN);
-                        embedBuilder.setFooter("To Bobify specific user use `" + fireStoreService.getModel().getPrefix() + "bobify <userID>` command");
-                        MessageCreateBuilder messageCreateBuilder = new MessageCreateBuilder().addEmbeds(embedBuilder.build());
-                        if(!members.isEmpty()){
-                            Button button = Button.primary("bobifyall", "Bobify all");
+
+                        if(model.getAllEntries() > MAX_USERS){
+                            temp.addAll(maps.subList(0, MAX_USERS));
+                            embedBuilder.setFooter("Showing page {**1/" + ((model.getAllEntries() / MAX_USERS) + 1) + "**} for [GetBob]");
+                            messageCreateBuilder.setActionRow(Button.primary("nextPage", "Next page"));
+                        }else{
+                            temp.addAll(maps);
+                        }
+                        messageCreateBuilder.addEmbeds(embedBuilder.build());
+                        if (!members.isEmpty()) {
+                            Button button = Button.danger("bobifyall", "Bobify all");
                             messageCreateBuilder.addActionRow(button);
                         }
                         MessageEditBuilder messageEditBuilder = new MessageEditBuilder().applyCreateData(messageCreateBuilder.build());
@@ -123,6 +148,24 @@ public class GetBobCommand implements ICommand {
         } catch (Exception e) {
             System.err.println("Error while sending message to user");
         }
+    }
+
+    private static EmbedBuilder getDefaultEmbedBuilder() {
+        EmbedBuilder defaultEmbedBuilder = new EmbedBuilder();
+        defaultEmbedBuilder.setTitle("Please wait");
+        defaultEmbedBuilder.setDescription("Fetching data from database. This operation is resource heavy and may take a while");
+        defaultEmbedBuilder.addField("On success", "I will edit this message when list is ready", false);
+        defaultEmbedBuilder.setColor(Color.YELLOW);
+        return defaultEmbedBuilder;
+    }
+
+    private void mapMember(Member member, AtomicInteger ordinal, List<Map<String, String>> maps) {
+        Map<String, String> map = new HashMap<>();
+        map.put("ordinal", String.valueOf(ordinal.getAndIncrement()));
+        map.put("userID", member.getId());
+        map.put("effectiveName", member.getEffectiveName());
+        map.put("mention", member.getAsMention());
+        maps.add(map);
     }
 
 }

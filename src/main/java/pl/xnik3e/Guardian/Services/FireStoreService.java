@@ -269,4 +269,34 @@ public class FireStoreService {
             System.err.println("Error deleting fetchedRoleUserList");
         }
     }
+
+    public void setToBobifyMembers(ToBobifyMembersModel model) {
+        new Thread(() -> {
+            ApiFuture<WriteResult> future = firestore.collection("cache")
+                    .document("bobifyUsersCommand")
+                    .collection("bobifyUsers")
+                    .document("toBobifyMembersModel")
+                    .set(model);
+            if (future.isDone())
+                System.out.println("Added toBobifyMembersModel");
+        }).start();
+    }
+
+    public void deleteToBobifyMembersBeforeNow() {
+        new Thread(() -> {
+            ApiFuture<QuerySnapshot> future = firestore.collection("cache")
+                    .document("bobifyUsersCommand")
+                    .collection("bobifyUsers")
+                    .whereLessThan("timestamp", (System.currentTimeMillis() + 1000 * 60 * 5))
+                    .get();
+            try {
+                future.get(5, TimeUnit.SECONDS).getDocuments().forEach(document -> {
+                    document.getReference().delete();
+                });
+            } catch (Exception e) {
+                System.err.println("Error deleting bobifyUsers");
+            }
+            System.out.println("Deleted bobifyUsers");
+        }).start();
+    }
 }

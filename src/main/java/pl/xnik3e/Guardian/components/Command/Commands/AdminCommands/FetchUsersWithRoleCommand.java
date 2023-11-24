@@ -25,13 +25,14 @@ import java.util.regex.Pattern;
 
 public class FetchUsersWithRoleCommand implements ICommand {
 
-    public static final int MAX_USERS = 25;
+    public final int MAX_USERS;
     private final MessageUtils messageUtils;
     private final FireStoreService fireStoreService;
 
     public FetchUsersWithRoleCommand(MessageUtils messageUtils) {
         this.messageUtils = messageUtils;
         this.fireStoreService = messageUtils.getFireStoreService();
+        this.MAX_USERS = fireStoreService.getModel().getMaxElementsInEmbed();
     }
 
     @Override
@@ -108,10 +109,11 @@ public class FetchUsersWithRoleCommand implements ICommand {
                 fireStoreService.deleteFetchedRoleUserListBeforeNow();
                 List<Map<String, String>> maps = new ArrayList<>();
                 AtomicInteger ordinal = new AtomicInteger();
-                FetchedRoleModel.FetchedRoleModelBuilder builder = FetchedRoleModel.builder();
-                builder.roleName(role.getName());
-                builder.roleID(role.getId());
-                builder.timestamp(System.currentTimeMillis() + 1000 * 60 * 5);
+
+                FetchedRoleModel model = new FetchedRoleModel();
+                model.setRoleName(role.getName());
+                model.setRoleID(role.getId());
+                model.setTimestamp(System.currentTimeMillis() + 1000 * 60 * 5);
 
                 eBuilder.setTitle("Fetching role *" + role.getName() + "* users");
                 eBuilder.setDescription("Please wait, this may take a while");
@@ -121,13 +123,12 @@ public class FetchUsersWithRoleCommand implements ICommand {
                     mapMember(member, ordinal, maps);
                 });
 
-                builder.users(maps);
+                model.setUsers(maps);
                 messageUtils.respondToUser(ctx, event, eBuilder)
                         .thenAccept(message -> {
                             MessageEditBuilder editBuilder = new MessageEditBuilder();
                             List<Map<String, String>> temp = new ArrayList<>();
-                            builder.messageID(message.getId());
-                            FetchedRoleModel model = builder.build();
+                            model.setMessageID(message.getId());
                             model.setAllEntries(model.getUsers().size());
 
                             String time = new SimpleDateFormat("HH:mm:ss dd.MM.yyyy").format(new Date(model.getTimestamp()));
