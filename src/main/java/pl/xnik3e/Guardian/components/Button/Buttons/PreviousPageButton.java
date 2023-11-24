@@ -32,21 +32,25 @@ public class PreviousPageButton extends BasicRoleFetchButtonUtils implements IBu
     @Override
     public void handle(ButtonInteractionEvent event) {
         event.deferEdit().queue();
-        Message message = event.getMessage();
-        String footer = Objects.requireNonNull(message.getEmbeds().get(0)
-                        .getFooter())
-                .getText();
-        Map<String, String> paramMap = extrudeFooterData(footer);
+        try {
+            Message message = event.getMessage();
+            String footer = Objects.requireNonNull(message.getEmbeds().get(0)
+                            .getFooter())
+                    .getText();
+            Map<String, String> paramMap = extrudeFooterData(footer);
 
-        //Handle first interaction with button -> show loading
-        int previousPage = Integer.parseInt(paramMap.get(PREVIOUS_PAGE)) - 1;
-        setLoading(event, previousPage);
-        switch (paramMap.get(FUNCTION)) {
-            case "Fetch":
-                fetchUsersWithRole(event, paramMap);
-                return;
-            default:
-                return;
+            //Handle first interaction with button -> show loading
+            int previousPage = Integer.parseInt(paramMap.get(PREVIOUS_PAGE)) - 1;
+            setLoading(event, previousPage);
+            switch (paramMap.get(FUNCTION)) {
+                case "Fetch":
+                    fetchUsersWithRole(event, paramMap);
+                    return;
+                default:
+                    return;
+            }
+        } catch (Exception e) {
+            setFetchError(event);
         }
     }
 

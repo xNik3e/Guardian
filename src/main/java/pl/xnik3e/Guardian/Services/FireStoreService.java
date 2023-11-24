@@ -233,7 +233,6 @@ public class FireStoreService {
 
             return Optional.of(model);
         } catch (Exception e) {
-            e.printStackTrace();
             return Optional.empty();
         }
     }

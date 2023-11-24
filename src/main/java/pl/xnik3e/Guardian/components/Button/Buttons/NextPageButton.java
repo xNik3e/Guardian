@@ -30,22 +30,26 @@ public class NextPageButton extends BasicRoleFetchButtonUtils implements IButton
     @Override
     public void handle(ButtonInteractionEvent event) {
         event.deferEdit().queue();
-        Message message = event.getMessage();
-        String footer = Objects.requireNonNull(message.getEmbeds().get(0)
-                        .getFooter())
-                .getText();
-        Map<String, String> paramMap = extrudeFooterData(footer);
+        try {
+            Message message = event.getMessage();
+            String footer = Objects.requireNonNull(message.getEmbeds().get(0)
+                            .getFooter())
+                    .getText();
+            Map<String, String> paramMap = extrudeFooterData(footer);
 
-        //Handle first interaction with button -> show loading
-        int nextPage = Integer.parseInt(paramMap.get(PREVIOUS_PAGE)) + 1;
-        setLoading(event, nextPage);
+            //Handle first interaction with button -> show loading
+            int nextPage = Integer.parseInt(paramMap.get(PREVIOUS_PAGE)) + 1;
+            setLoading(event, nextPage);
 
-        switch (paramMap.get(FUNCTION)) {
-            case "Fetch":
-                fetchUsersWithRole(event, paramMap);
-                return;
-            default:
-                return;
+            switch (paramMap.get(FUNCTION)) {
+                case "Fetch":
+                    fetchUsersWithRole(event, paramMap);
+                    return;
+                default:
+                    return;
+            }
+        } catch (Exception e) {
+            setFetchError(event);
         }
     }
 

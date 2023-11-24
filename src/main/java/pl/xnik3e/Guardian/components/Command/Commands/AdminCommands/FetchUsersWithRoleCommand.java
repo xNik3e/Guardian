@@ -15,10 +15,9 @@ import pl.xnik3e.Guardian.components.Command.ICommand;
 import javax.annotation.Nullable;
 
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
@@ -131,10 +130,12 @@ public class FetchUsersWithRoleCommand implements ICommand {
                             FetchedRoleModel model = builder.build();
                             model.setAllEntries(model.getUsers().size());
 
+                            String time = new SimpleDateFormat("HH:mm:ss dd.MM.yyyy").format(new Date(model.getTimestamp()));
+
                             fireStoreService.setFetchedRoleModel(model);
                             eBuilder.setTitle("Fetched role *" + role.getName() + "* users");
                             eBuilder.setDescription("I've found **" + model.getAllEntries() + "** users with role **" + role.getName() + "**");
-                            eBuilder.appendDescription("\n\n**CACHED DATA WILL BE DELETED IN 5 MINUTES**\n\n");
+                            eBuilder.appendDescription("\n\n**CACHED DATA WILL BE DELETED IN 5 MINUTES** at: " + time + "\n\n");
                             eBuilder.setColor(Color.GREEN);
 
                             if (model.getAllEntries() > MAX_USERS) {

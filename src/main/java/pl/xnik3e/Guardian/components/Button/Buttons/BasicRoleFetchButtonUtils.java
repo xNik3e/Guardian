@@ -8,6 +8,8 @@ import net.dv8tion.jda.api.utils.messages.MessageEditBuilder;
 import pl.xnik3e.Guardian.Models.FetchedRoleModel;
 
 import java.awt.*;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +51,8 @@ public class BasicRoleFetchButtonUtils {
 
         List<Map<String, String>> maps = model.getUsers();
 
+        String time = new SimpleDateFormat("HH:mm:ss dd.MM.yyyy").format(new Date(model.getTimestamp()));
+
         if(predicate.test(currentPage)){
             editBuilder.setActionRow(direction == Direction.PREVIOUS ? buttonNext : buttonPrevious);
         }else{
@@ -60,6 +64,7 @@ public class BasicRoleFetchButtonUtils {
                 model.getAllEntries() +
                 "** users with role **" +
                 model.getRoleName() + "**");
+        eBuilder.appendDescription("\n\n**CACHED DATA WILL BE DELETED IN 5 MINUTES** at: " + time + "\n\n");
         eBuilder.setFooter("Showing page {**" + currentPage + "/" + pages + "**} for [Fetch]");
         eBuilder.setColor(Color.GREEN);
         maps.forEach(map -> {
