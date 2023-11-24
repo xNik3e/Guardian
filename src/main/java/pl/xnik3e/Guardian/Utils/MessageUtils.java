@@ -271,7 +271,7 @@ public class MessageUtils {
         if (event == null)
             return editUserMessage(originalMessage, message);
         else{
-            event.getHook().editOriginalEmbeds().queue();
+            //event.getHook().editOriginalEmbeds().queue();
             return event.getHook().editOriginal(message).submit();
         }
     }

@@ -5,17 +5,18 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Map;
+import java.util.List;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class FetchedRoleUserModel {
+public class FetchedRoleModel {
     private String messageID;
-    private String userID;
-    private Integer ordinal;
+    private List<Map<String, String>> users;
+    private int allEntries;
     private long timestamp;
-    private String value;
-    private Integer allEntries;
     private String roleID;
     private String roleName;
 

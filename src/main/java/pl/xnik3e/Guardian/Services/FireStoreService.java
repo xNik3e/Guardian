@@ -2,18 +2,13 @@ package pl.xnik3e.Guardian.Services;
 
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.*;
-import com.google.cloud.firestore.annotation.DocumentId;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import pl.xnik3e.Guardian.Models.*;
 
-import javax.print.Doc;
-import java.rmi.server.UID;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 @Getter
 @Service
@@ -203,64 +198,51 @@ public class FireStoreService {
         }
     }
 
-    public void setFetchedRoleUserList(List<FetchedRoleUserModel> fetchedRoleUserList) {
+    public void setFetchedRoleModel(FetchedRoleModel fetchedRoleModel) {
         new Thread(() -> {
-            for (FetchedRoleUserModel model : fetchedRoleUserList) {
-                ApiFuture<DocumentReference> future = firestore.collection("cache")
-                        .document("fetchedRoleUserList")
-                        .collection("fetchedIds")
-                        .add(model);
-            }
-            System.out.println("Added fetched IDs");
+            ApiFuture<WriteResult> future = firestore.collection("cache")
+                    .document("fetchUsersWithRoleCommand")
+                    .collection("fetchUsers")
+                    .document("roleModel")
+                    .set(fetchedRoleModel);
+            if (future.isDone())
+                System.out.println("Added fetched IDs");
         }).start();
     }
 
-    public Optional<List<FetchedRoleUserModel>> fetchFetchedRoleUserList(int page, int maxUsers) {
-        List<FetchedRoleUserModel> fetchedRoleUserModels = new ArrayList<>();
-        ApiFuture<QuerySnapshot> future = firestore.collection("cache")
-                .document("fetchedRoleUserList")
-                .collection("fetchedIds")
-                .whereGreaterThanOrEqualTo("ordinal", (page - 1) * maxUsers)
-                .whereLessThan("ordinal", page * maxUsers)
-                .orderBy("ordinal")
-                .get();
+    public Optional<FetchedRoleModel> fetchFetchedRoleUserList(int page, int maxUsers) {
+        ApiFuture<DocumentSnapshot> future = firestore.collection("cache")
+                .document("fetchUsersWithRoleCommand")
+                .collection("fetchUsers")
+                .document("roleModel").get();
+
         try {
-            future.get(10, TimeUnit.SECONDS).getDocuments().forEach(document -> {
-                FetchedRoleUserModel model = document.toObject(FetchedRoleUserModel.class);
-                if (model != null) {
-                    fetchedRoleUserModels.add(model);
-                }
-            });
-            fetchedRoleUserModels.sort(Comparator.comparing(FetchedRoleUserModel::getOrdinal));
-            return Optional.of(fetchedRoleUserModels);
+            FetchedRoleModel model = Objects.requireNonNull(future.get(10, TimeUnit.SECONDS).toObject(FetchedRoleModel.class));
+
+            model.setUsers(model
+                    .getUsers()
+                    .stream()
+                    .sorted(Comparator
+                            .comparingInt(o -> Integer.parseInt(o
+                                    .get("ordinal")))
+                    ).filter(map -> {
+                        int ordinal = Integer.parseInt(map.get("ordinal"));
+                        return ordinal >= (page -1) * maxUsers && ordinal < page * maxUsers;
+                    })
+                    .toList());
+
+            return Optional.of(model);
         } catch (Exception e) {
             e.printStackTrace();
             return Optional.empty();
         }
     }
 
-    public void deleteFetchedRoleUserList(String messageID) {
+    public void deleteFetchedRoleUserListBeforeNow() {
         new Thread(() -> {
             ApiFuture<QuerySnapshot> future = firestore.collection("cache")
-                    .document("fetchedRoleUserList")
-                    .collection("fetchedIds")
-                    .whereEqualTo("messageID", messageID)
-                    .get();
-            try {
-                future.get(5, TimeUnit.SECONDS).getDocuments().forEach(document -> {
-                    document.getReference().delete();
-                });
-            } catch (Exception e) {
-                System.err.println("Error deleting fetchedRoleUserList");
-            }
-        }).start();
-    }
-
-    public void deleteFetchedRoleUserListBeforeNow(){
-        new Thread(() -> {
-            ApiFuture<QuerySnapshot> future = firestore.collection("cache")
-                    .document("fetchedRoleUserList")
-                    .collection("fetchedIds")
+                    .document("fetchUsersWithRoleCommand")
+                    .collection("fetchUsers")
                     .whereLessThan("timestamp", (System.currentTimeMillis() + 1000 * 60 * 5))
                     .get();
             try {
@@ -276,8 +258,8 @@ public class FireStoreService {
 
     public void autoDeleteFetchedRoleUser() {
         ApiFuture<QuerySnapshot> future = firestore.collection("cache")
-                .document("fetchedRoleUserList")
-                .collection("fetchedIds")
+                .document("fetchUsersWithRoleCommand")
+                .collection("fetchUsers")
                 .whereLessThan("timestamp", System.currentTimeMillis())
                 .get();
         try {
