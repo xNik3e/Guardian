@@ -1,6 +1,5 @@
 package pl.xnik3e.Guardian.components;
 
-import io.github.cdimascio.dotenv.Dotenv;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
@@ -60,7 +59,7 @@ public class ScheduledTask {
                 message.delete().queue();
             });
         }).start();
-        new Thread(fireStoreService::autoDeleteFetchedRoleUser).start();
+        new Thread(() -> fireStoreService.autoDeleteCache(jda, messageUtils)).start();
     }
 
 

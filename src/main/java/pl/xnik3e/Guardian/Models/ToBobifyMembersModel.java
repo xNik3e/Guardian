@@ -9,9 +9,5 @@ import java.util.Map;
 import java.util.List;
 
 @Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
 public class ToBobifyMembersModel extends BasicCacheModel{
-    private List<Map<String, String>> users;
 }

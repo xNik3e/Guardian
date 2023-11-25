@@ -3,7 +3,11 @@ package pl.xnik3e.Guardian.Utils;
 import lombok.Getter;
 import lombok.NonNull;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.entities.channel.Channel;
+import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
@@ -11,11 +15,13 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
+import net.dv8tion.jda.api.utils.messages.MessageEditBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageEditData;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import pl.xnik3e.Guardian.Models.BasicCacheModel;
 import pl.xnik3e.Guardian.Models.ConfigModel;
 import pl.xnik3e.Guardian.Models.TempBanModel;
 import pl.xnik3e.Guardian.Services.FireStoreService;
@@ -29,8 +35,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Getter
 @Service
@@ -251,8 +255,8 @@ public class MessageUtils {
      * Sends message to user in private channel or in channel where command was invoked.
      * <p></p>
      *
-     * @param ctx      CommandContext to get member from
-     * @param event    SlashCommandInteractionEvent to get hook from
+     * @param ctx     CommandContext to get member from
+     * @param event   SlashCommandInteractionEvent to get hook from
      * @param message Message to send in form of MessageCreateData
      */
     public CompletableFuture<Message> respondToUser(CommandContext ctx, SlashCommandInteractionEvent event, MessageCreateData message) {
@@ -267,22 +271,22 @@ public class MessageUtils {
      * <p></p>
      *
      * @param originalMessage Message to edit
-     * @param event    SlashCommandInteractionEvent to get hook from
-     * @param message Message to send in form of MessageCreateData
+     * @param event           SlashCommandInteractionEvent to get hook from
+     * @param message         Message to send in form of MessageCreateData
      */
     public CompletableFuture<Message> editOryginalMessage(Message originalMessage, SlashCommandInteractionEvent event, MessageEditData message) {
         if (event == null)
             return editUserMessage(originalMessage, message);
-        else{
+        else {
             //event.getHook().editOriginalEmbeds().queue();
             return event.getHook().editOriginal(message).submit();
         }
     }
 
     private CompletableFuture<Message> editUserMessage(Message originalMessage, MessageEditData message) {
-        try{
+        try {
             return originalMessage.editMessage(message).submit();
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -325,7 +329,8 @@ public class MessageUtils {
 
         toBeBannedIds.forEach(id -> {
                     guild.retrieveMemberById(id).queue(member -> {
-                        if(tempBan) tempBanUser(member.getUser(), channel, guild, time, timeUnit, reason.isEmpty() ? "" : reason);
+                        if (tempBan)
+                            tempBanUser(member.getUser(), channel, guild, time, timeUnit, reason.isEmpty() ? "" : reason);
                         //else guild.ban(member.getUser(), 0, TimeUnit.SECONDS).reason(reason).queue();
                         StringBuilder sb = new StringBuilder();
                         sb
@@ -516,7 +521,7 @@ public class MessageUtils {
     @Nullable
     public Member getMemberFromButtonEvent(ButtonInteractionEvent event) {
         Member member = event.getMember();
-        if(event.getGuild() == null){
+        if (event.getGuild() == null) {
             User user = event.getInteraction().getUser();
             Guild guild = event.getJDA().getGuildById(fireStoreService.getEnvironmentModel().getGUILD_ID());
             member = guild.retrieveMemberById(user.getId()).complete();
@@ -524,4 +529,32 @@ public class MessageUtils {
         return member;
     }
 
+
+    public <T extends BasicCacheModel> void deleteMessage(JDA jda, T model) {
+        new Thread(() -> {
+            try{
+                EmbedBuilder builder = new EmbedBuilder();
+                builder.setTitle("This message has been deleted");
+                builder.setColor(Color.BLUE);
+                MessageEditBuilder messageEditBuilder = new MessageEditBuilder().setEmbeds(builder.build());
+                if(model.isPrivateChannel()){
+                    PrivateChannel privateChannel = jda.getPrivateChannelById(model.getChannelId());
+                    privateChannel.retrieveMessageById(model.getMessageID()).queue(message -> {
+                        if(message.getComponents() != null && !message.getComponents().isEmpty())
+                            message.editMessageComponents().queue();
+                        message.editMessage(messageEditBuilder.build()).queue();
+                    });
+                    return;
+                }
+                TextChannel textChannel = jda.getTextChannelById(model.getChannelId());
+                textChannel.retrieveMessageById(model.getMessageID()).queue(message -> {
+                    if(message.getComponents() != null && !message.getComponents().isEmpty())
+                        message.editMessageComponents().queue();
+                    message.editMessage(messageEditBuilder.build()).queue();
+                });
+            }catch(Exception e){
+                e.printStackTrace();
+            }
+        }).start();
+    }
 }

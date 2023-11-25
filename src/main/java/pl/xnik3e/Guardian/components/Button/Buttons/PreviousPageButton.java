@@ -1,29 +1,25 @@
 package pl.xnik3e.Guardian.components.Button.Buttons;
 
-import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
-import net.dv8tion.jda.api.interactions.components.buttons.Button;
-import net.dv8tion.jda.api.utils.messages.MessageEditBuilder;
+import pl.xnik3e.Guardian.Models.BasicCacheModel;
 import pl.xnik3e.Guardian.Models.FetchedRoleModel;
+import pl.xnik3e.Guardian.Models.ToBobifyMembersModel;
 import pl.xnik3e.Guardian.Services.FireStoreService;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
 import pl.xnik3e.Guardian.components.Button.IButton;
 
-import java.awt.*;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Predicate;
 
-public class PreviousPageButton extends BasicRoleFetchButtonUtils implements IButton {
+public class PreviousPageButton extends BasicPagingButtonUtils implements IButton {
 
     private final MessageUtils messageUtils;
     private final FireStoreService fireStoreService;
 
     public PreviousPageButton(MessageUtils messageUtils) {
-        super();
+        super(messageUtils.getFireStoreService());
         this.messageUtils = messageUtils;
         this.fireStoreService = messageUtils.getFireStoreService();
     }
@@ -44,7 +40,10 @@ public class PreviousPageButton extends BasicRoleFetchButtonUtils implements IBu
             setLoading(event, previousPage);
             switch (paramMap.get(FUNCTION)) {
                 case "Fetch":
-                    fetchUsersWithRole(event, paramMap);
+                    fetchCache(event, paramMap, FetchedRoleModel.class);
+                    return;
+                case "GetBob":
+                    fetchCache(event, paramMap, ToBobifyMembersModel.class);
                     return;
                 default:
                     return;
@@ -59,24 +58,22 @@ public class PreviousPageButton extends BasicRoleFetchButtonUtils implements IBu
         return "previousPage";
     }
 
-    private void fetchUsersWithRole(ButtonInteractionEvent event, Map<String, String> paramMap) {
+    private <T extends BasicCacheModel> void fetchCache(ButtonInteractionEvent event, Map<String, String> paramMap, Class<T> clazz) {
         try {
             int currentPage = Integer.parseInt(paramMap.get(PREVIOUS_PAGE)) - 1;
             int allPages = Integer.parseInt(paramMap.get(PAGES));
             Map<String, Integer> pageMap = Map.of(PREVIOUS_PAGE, currentPage, PAGES, allPages);
 
-            Optional<FetchedRoleModel> fetchedRoleModel =
-                    fireStoreService.fetchFetchedRoleUserList(currentPage, MAX_USERS);
-            if (fetchedRoleModel.isEmpty()) {
+            Optional<T> membersModel
+                    = fireStoreService.fetchCache(currentPage, MAX_USERS, clazz);
+            if (membersModel.isEmpty()) {
                 setFetchError(event);
                 return;
             }
-
-            createMessage(event, fetchedRoleModel.get(), pageMap, page -> page == 1, Direction.PREVIOUS);
+            createMessage(event, membersModel.get(), pageMap, page -> page == allPages, Direction.PREVIOUS);
         } catch (Exception e) {
             setFetchError(event);
         }
     }
-
 
 }

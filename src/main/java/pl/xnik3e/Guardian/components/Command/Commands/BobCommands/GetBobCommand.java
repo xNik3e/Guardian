@@ -1,14 +1,17 @@
 package pl.xnik3e.Guardian.components.Command.Commands.BobCommands;
 
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageEditBuilder;
+import pl.xnik3e.Guardian.Models.FetchedRoleModel;
 import pl.xnik3e.Guardian.Models.ToBobifyMembersModel;
 import pl.xnik3e.Guardian.Services.FireStoreService;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
@@ -104,7 +107,11 @@ public class GetBobCommand implements ICommand {
             guild.findMembers(member -> !messageUtils.hasMentionableNickName(member))
                     .onSuccess(members -> {
                         MessageCreateBuilder messageCreateBuilder = new MessageCreateBuilder();
-                        fireStoreService.deleteToBobifyMembersBeforeNow();
+                        ToBobifyMembersModel deletedModel = fireStoreService.deleteCacheUntilNow(ToBobifyMembersModel.class);
+                        if(deletedModel != null){
+                            JDA jda = event != null ? event.getJDA() : ctx.getJDA();
+                            messageUtils.deleteMessage(jda, deletedModel);
+                        }
                         List<Map<String, String>> maps = new ArrayList<>();
                         List<Map<String, String>> temp = new ArrayList<>();
                         AtomicInteger ordinal = new AtomicInteger();
@@ -115,28 +122,40 @@ public class GetBobCommand implements ICommand {
                         members.forEach(member -> {
                             mapMember(member, ordinal, maps);
                         });
-                        model.setUsers(maps);
+                        model.setMaps(maps);
                         model.setAllEntries(maps.size());
                         model.setMessageID(oryginalMessage.getId());
-                        fireStoreService.setToBobifyMembers(model);
+                        model.setChannelId(oryginalMessage.getChannelId());
+                        model.setUserID(oryginalMessage.getAuthor().getId());
+                        model.setPrivateChannel(oryginalMessage.getChannelType() == ChannelType.PRIVATE);
+                        fireStoreService.setCacheModel(model);
 
                         embedBuilder.setTitle("Bob list");
                         embedBuilder.setDescription("List of users which username are marked as not being mentionable");
                         embedBuilder.appendDescription("\nTo Bobify specific user use `" + fireStoreService.getModel().getPrefix() + "bobify <userID>` command");
                         embedBuilder.setColor(Color.GREEN);
 
-                        if(model.getAllEntries() > MAX_USERS){
+                        int additionalPages = model.getAllEntries() % MAX_USERS == 0 ?
+                                0 : MAX_USERS == 1 ?
+                                0 : 1;
+
+                        if(model.getAllEntries() >= MAX_USERS){
                             temp.addAll(maps.subList(0, MAX_USERS));
-                            embedBuilder.setFooter("Showing page {**1/" + ((model.getAllEntries() / MAX_USERS) + 1) + "**} for [GetBob]");
+                            embedBuilder.setFooter("Showing page {**1/" + ((model.getAllEntries() / MAX_USERS) + additionalPages) + "**} for [GetBob]");
                             messageCreateBuilder.setActionRow(Button.primary("nextPage", "Next page"));
                         }else{
                             temp.addAll(maps);
                         }
-                        messageCreateBuilder.addEmbeds(embedBuilder.build());
                         if (!members.isEmpty()) {
                             Button button = Button.danger("bobifyall", "Bobify all");
                             messageCreateBuilder.addActionRow(button);
                         }
+
+                        temp.forEach(fetchedMap -> {
+                            embedBuilder.addField(fetchedMap.get("effectiveName"), fetchedMap.get("mention") + "\n[" + fetchedMap.get("userID")+"]", true);
+                        });
+
+                        messageCreateBuilder.addEmbeds(embedBuilder.build());
                         MessageEditBuilder messageEditBuilder = new MessageEditBuilder().applyCreateData(messageCreateBuilder.build());
                         oryginalMessage.editMessage(messageEditBuilder.build()).queue();
                     }).onError(error -> {

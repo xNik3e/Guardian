@@ -1,7 +1,9 @@
 package pl.xnik3e.Guardian.components.Command.Commands.AdminCommands;
 
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.utils.concurrent.Task;
@@ -18,7 +20,6 @@ import java.awt.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -106,7 +107,11 @@ public class FetchUsersWithRoleCommand implements ICommand {
             }
             Task<List<Member>> task = guild.findMembersWithRoles(role);
             task.onSuccess(members -> {
-                fireStoreService.deleteFetchedRoleUserListBeforeNow();
+                FetchedRoleModel deletedModel = fireStoreService.deleteCacheUntilNow(FetchedRoleModel.class);
+                if(deletedModel != null){
+                    JDA jda = event != null ? event.getJDA() : ctx.getJDA();
+                    messageUtils.deleteMessage(jda, deletedModel);
+                }
                 List<Map<String, String>> maps = new ArrayList<>();
                 AtomicInteger ordinal = new AtomicInteger();
 
@@ -123,28 +128,35 @@ public class FetchUsersWithRoleCommand implements ICommand {
                     mapMember(member, ordinal, maps);
                 });
 
-                model.setUsers(maps);
+                model.setMaps(maps);
                 messageUtils.respondToUser(ctx, event, eBuilder)
                         .thenAccept(message -> {
                             MessageEditBuilder editBuilder = new MessageEditBuilder();
                             List<Map<String, String>> temp = new ArrayList<>();
                             model.setMessageID(message.getId());
-                            model.setAllEntries(model.getUsers().size());
+                            model.setUserID(message.getAuthor().getId());
+                            model.setChannelId(message.getChannelId());
+                            model.setPrivateChannel(message.getChannelType() == ChannelType.PRIVATE);
+                            model.setAllEntries(model.getMaps().size());
 
                             String time = new SimpleDateFormat("HH:mm:ss dd.MM.yyyy").format(new Date(model.getTimestamp()));
 
-                            fireStoreService.setFetchedRoleModel(model);
+                            fireStoreService.setCacheModel(model);
                             eBuilder.setTitle("Fetched role *" + role.getName() + "* users");
                             eBuilder.setDescription("I've found **" + model.getAllEntries() + "** users with role **" + role.getName() + "**");
                             eBuilder.appendDescription("\n\n**CACHED DATA WILL BE DELETED IN 5 MINUTES** at: " + time + "\n\n");
                             eBuilder.setColor(Color.GREEN);
 
-                            if (model.getAllEntries() > MAX_USERS) {
-                                temp.addAll(model.getUsers().subList(0, MAX_USERS));
-                                eBuilder.setFooter("Showing page {**1/" + ((model.getAllEntries() / MAX_USERS) + 1) + "**} for [Fetch]");
+                            int additionalPages = model.getAllEntries() % MAX_USERS == 0 ?
+                                    0 : MAX_USERS == 1 ?
+                                    0 : 1;
+
+                            if (model.getAllEntries() >= MAX_USERS) {
+                                temp.addAll(model.getMaps().subList(0, MAX_USERS));
+                                eBuilder.setFooter("Showing page {**1/" + ((model.getAllEntries() / MAX_USERS) + additionalPages) + "**} for [Fetch]");
                                 editBuilder.setActionRow(Button.primary("nextPage", "Next page"));
                             } else {
-                                temp.addAll(model.getUsers());
+                                temp.addAll(model.getMaps());
                             }
 
                             temp.forEach(fetchedMap -> {
