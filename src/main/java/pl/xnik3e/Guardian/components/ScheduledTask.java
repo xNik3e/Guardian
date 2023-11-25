@@ -1,6 +1,5 @@
 package pl.xnik3e.Guardian.components;
 
-import io.github.cdimascio.dotenv.Dotenv;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
@@ -50,7 +49,7 @@ public class ScheduledTask {
     @Scheduled(fixedRate = 60 * 1000)
     public void unbanUsers(){
         Guild guild = jda.getGuildById(fireStoreService.getEnvironmentModel().getGUILD_ID());
-        Thread thread = new Thread(() -> {
+        new Thread(() -> {
             List<TempBanModel> tempBanModels = fireStoreService.queryBans();
             tempBanModels.forEach(model -> {
                 guild.unban(UserSnowflake.fromId(model.getUserId())).queue();
@@ -59,8 +58,8 @@ public class ScheduledTask {
                 Message message = logChannel.retrieveMessageById(model.getMessageId()).complete();
                 message.delete().queue();
             });
-        });
-        thread.start();
+        }).start();
+        new Thread(() -> fireStoreService.autoDeleteCache(jda, messageUtils)).start();
     }
 
 

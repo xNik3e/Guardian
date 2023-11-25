@@ -1,7 +1,10 @@
 package pl.xnik3e.Guardian.components.Button.Buttons;
 
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import org.jetbrains.annotations.NotNull;
 import pl.xnik3e.Guardian.Services.FireStoreService;
@@ -23,7 +26,8 @@ public class ResetButton implements IButton {
     @Override
     public void handle(ButtonInteractionEvent event) {
         event.deferEdit().queue();
-        if(messageUtils.checkAuthority(event.getMember())){
+        Member member = messageUtils.getMemberFromButtonEvent(event);
+        if (messageUtils.checkAuthority(member)) {
             fireStoreService.getModel().getDefaultConfig();
             fireStoreService.updateConfigModel();
             if (!event.getMessage().isEphemeral()) {
@@ -42,7 +46,7 @@ public class ResetButton implements IButton {
     }
 
     @NotNull
-    private  MessageEmbed getMessageEmbed() {
+    private MessageEmbed getMessageEmbed() {
         return new EmbedBuilder()
                 .setTitle("Reset complete!")
                 .setDescription("Bot has been reset to factory settings")

@@ -26,10 +26,10 @@ public class UserAppealButton implements IButton {
 
     @Override
     public void handle(ButtonInteractionEvent event) {
+        event.deferEdit().queue();
         Message message = event.getMessage();
         String previousNick = message.getEmbeds().get(0).getFields().get(0).getValue();
         User user = event.getUser();
-        event.deferEdit().queue();
         event.getHook().editOriginalComponents().queue();
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setTitle("Odwołanie");

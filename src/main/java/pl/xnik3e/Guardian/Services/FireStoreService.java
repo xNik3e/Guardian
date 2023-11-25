@@ -2,22 +2,17 @@ package pl.xnik3e.Guardian.Services;
 
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.*;
-import com.google.cloud.firestore.annotation.DocumentId;
 import lombok.Getter;
+import lombok.NonNull;
+import net.dv8tion.jda.api.JDA;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import pl.xnik3e.Guardian.Models.ConfigModel;
-import pl.xnik3e.Guardian.Models.EnvironmentModel;
-import pl.xnik3e.Guardian.Models.NickNameModel;
-import pl.xnik3e.Guardian.Models.TempBanModel;
+import pl.xnik3e.Guardian.Models.*;
+import pl.xnik3e.Guardian.Utils.MessageUtils;
 
-import javax.print.Doc;
-import java.rmi.server.UID;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Getter
 @Service
@@ -59,11 +54,11 @@ public class FireStoreService {
 
 
         firestore.collection("global_config").document("environment").addSnapshotListener((snapshot, e) -> {
-            if(e != null) {
+            if (e != null) {
                 System.err.println("Listen failed: " + e);
                 return;
             }
-            if(snapshot != null && snapshot.exists()) {
+            if (snapshot != null && snapshot.exists()) {
                 EnvironmentModel tempModel = snapshot.toObject(EnvironmentModel.class);
                 assert tempModel != null;
                 environmentModel.updateEnvironmentModel(tempModel);
@@ -109,14 +104,14 @@ public class FireStoreService {
     }
 
 
-    public void setTempBanModel(TempBanModel banModel){
+    public void setTempBanModel(TempBanModel banModel) {
         ApiFuture<WriteResult> future = firestore.collection("tempbans").document(banModel.getMessageId()).set(banModel);
-        if(future.isDone()){
+        if (future.isDone()) {
             System.out.println("Added tempban model");
         }
     }
 
-    public TempBanModel fetchBanModel(String messageId){
+    public TempBanModel fetchBanModel(String messageId) {
         ApiFuture<DocumentSnapshot> future = firestore.collection("tempbans").document(messageId).get();
         try {
             DocumentSnapshot document = future.get(5, TimeUnit.SECONDS);
@@ -126,43 +121,43 @@ public class FireStoreService {
         }
     }
 
-    public void deleteBanModel(String messageId){
+    public void deleteBanModel(String messageId) {
         ApiFuture<WriteResult> future = firestore.collection("tempbans").document(messageId).delete();
-        if(future.isDone()){
+        if (future.isDone()) {
             System.out.println("Deleted tempban model");
         }
     }
 
 
-    public List<TempBanModel> queryBans(){
+    public List<TempBanModel> queryBans() {
         long now = System.currentTimeMillis();
         List<TempBanModel> tempBanModels = new ArrayList<>();
         ApiFuture<QuerySnapshot> future = firestore.collection("tempbans").whereLessThan("banTime", now).get();
-        try{
+        try {
             future.get(10, TimeUnit.SECONDS).getDocuments().forEach(document -> {
                 TempBanModel tempBanModel = document.toObject(TempBanModel.class);
-                if(tempBanModel != null){
+                if (tempBanModel != null) {
                     tempBanModels.add(tempBanModel);
                 }
             });
             return tempBanModels;
-        }catch (Exception e){
-            return null;
-        }
-    }
-
-    public NickNameModel getNickNameModel(String userID){
-        ApiFuture<DocumentSnapshot> future = firestore.collection("whitelist").document(userID).get();
-        try{
-           return future.get(5, TimeUnit.SECONDS).toObject(NickNameModel.class);
         } catch (Exception e) {
             return null;
         }
     }
 
-    public boolean checkIfWhitelisted(String UID, String nickName){
+    public NickNameModel getNickNameModel(String userID) {
+        ApiFuture<DocumentSnapshot> future = firestore.collection("whitelist").document(userID).get();
+        try {
+            return future.get(5, TimeUnit.SECONDS).toObject(NickNameModel.class);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public boolean checkIfWhitelisted(String UID, String nickName) {
         ApiFuture<DocumentSnapshot> future = firestore.collection("whitelist").document(UID).get();
-        try{
+        try {
             DocumentSnapshot snapshot = future.get(5, TimeUnit.SECONDS);
             return snapshot.toObject(NickNameModel.class).getNickName().contains(nickName);
         } catch (Exception e) {
@@ -170,25 +165,25 @@ public class FireStoreService {
         }
     }
 
-    public void deleteNickNameModel(String userID){
+    public void deleteNickNameModel(String userID) {
         ApiFuture<WriteResult> future = firestore.collection("whitelist").document(userID).delete();
-        if(future.isDone()){
+        if (future.isDone()) {
             System.out.println("Deleted nickname model");
         }
     }
 
     public void addNickModel(NickNameModel model) {
         ApiFuture<WriteResult> future = firestore.collection("whitelist").document(model.getUserID()).set(model);
-        if(future.isDone()){
+        if (future.isDone()) {
             System.out.println("Added nickname model");
         }
     }
 
-    public void updateNickModel(NickNameModel model){
+    public void updateNickModel(NickNameModel model) {
         ApiFuture<DocumentSnapshot> future = firestore.collection("whitelist").document(model.getUserID()).get();
         try {
             NickNameModel nickModel = future.get(5, TimeUnit.SECONDS).toObject(NickNameModel.class);
-            if(nickModel != null && !nickModel.getNickName().contains(model.getNickName().get(0)))
+            if (nickModel != null && !nickModel.getNickName().contains(model.getNickName().get(0)))
                 nickModel.getNickName().add(model.getNickName().get(0));
 
             addNickModel(nickModel);
@@ -198,12 +193,130 @@ public class FireStoreService {
         }
     }
 
-    public List<String> getWhitelistedNicknames(String userID){
+    public List<String> getWhitelistedNicknames(String userID) {
         ApiFuture<DocumentSnapshot> future = firestore.collection("whitelist").document(userID).get();
-        try{
+        try {
             return future.get(5, TimeUnit.SECONDS).toObject(NickNameModel.class).getNickName();
         } catch (Exception e) {
             return new ArrayList<>();
+        }
+    }
+
+    public <T extends BasicCacheModel> void setCacheModel(T model) {
+        new Thread(() -> {
+            try {
+                DocumentReference reference = null;
+                Class<?> modelClass = model.getClass();
+                if (modelClass.isAssignableFrom(FetchedRoleModel.class)) {
+                    reference = firestore.collection("cache")
+                            .document("fetchUsersWithRoleCommand")
+                            .collection("fetchUsers")
+                            .document("roleModel");
+                } else if (modelClass.isAssignableFrom(ToBobifyMembersModel.class)) {
+                    reference = firestore.collection("cache")
+                            .document("bobifyUsersCommand")
+                            .collection("bobifyUsers")
+                            .document("toBobifyMembersModel");
+                }
+                ApiFuture<WriteResult> future = reference.set(model);
+                if (future.isDone())
+                    System.out.println("Added cached model");
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.err.println("Error while setting cache model");
+            }
+        }).start();
+    }
+
+    public <T extends BasicCacheModel> Optional<T> fetchCache(int page, int maxUsers, @NonNull Class<T> modelClass) {
+        ApiFuture<DocumentSnapshot> future = null;
+        if (modelClass.isAssignableFrom(FetchedRoleModel.class)) {
+            future = firestore.collection("cache")
+                    .document("fetchUsersWithRoleCommand")
+                    .collection("fetchUsers")
+                    .document("roleModel").get();
+        } else if (modelClass.isAssignableFrom(ToBobifyMembersModel.class)) {
+            future = firestore.collection("cache")
+                    .document("bobifyUsersCommand")
+                    .collection("bobifyUsers")
+                    .document("toBobifyMembersModel").get();
+        }
+
+        try {
+            T model = Objects.requireNonNull(future.get(10, TimeUnit.SECONDS).toObject(modelClass));
+            model.setMaps(model
+                    .getMaps()
+                    .stream()
+                    .sorted(Comparator
+                            .comparingInt(o -> Integer.parseInt(o
+                                    .get("ordinal")))
+                    ).filter(map -> {
+                        int ordinal = Integer.parseInt(map.get("ordinal"));
+                        return ordinal >= (page - 1) * maxUsers && ordinal < page * maxUsers;
+                    })
+                    .toList());
+
+            return Optional.of(model);
+        } catch (Exception e) {
+            return Optional.empty();
+        }
+    }
+
+    public <T extends BasicCacheModel> T deleteCacheUntilNow(Class<T> clazz) {
+        ApiFuture<QuerySnapshot> future = null;
+        if(clazz.isAssignableFrom(FetchedRoleModel.class)){
+            future = firestore.collection("cache")
+                    .document("fetchUsersWithRoleCommand")
+                    .collection("fetchUsers")
+                    .whereLessThan("timestamp", (System.currentTimeMillis() + 1000 * 60 * 5))
+                    .get();
+        }else if(clazz.isAssignableFrom(ToBobifyMembersModel.class)){
+            future = firestore.collection("cache")
+                    .document("bobifyUsersCommand")
+                    .collection("bobifyUsers")
+                    .whereLessThan("timestamp", (System.currentTimeMillis() + 1000 * 60 * 5))
+                    .get();
+        }
+
+        try {
+            QueryDocumentSnapshot snapshot = future.get(5, TimeUnit.SECONDS).getDocuments().get(0);
+            T deletedModel = snapshot.toObject(clazz);
+            System.out.println("Deleted cache");
+            return deletedModel;
+        } catch (Exception e) {
+            System.err.println("Error deleting cache");
+            return null;
+        }
+    }
+
+    public void autoDeleteCache(JDA jda, MessageUtils messageUtils) {
+        ApiFuture<QuerySnapshot> futureFetch = firestore.collection("cache")
+                .document("fetchUsersWithRoleCommand")
+                .collection("fetchUsers")
+                .whereLessThan("timestamp", (System.currentTimeMillis()))
+                .get();
+        ApiFuture<QuerySnapshot> futureBob = firestore.collection("cache")
+                .document("bobifyUsersCommand")
+                .collection("bobifyUsers")
+                .whereLessThan("timestamp", (System.currentTimeMillis()))
+                .get();
+        try {
+            DocumentSnapshot documentFetch = futureFetch.get().getDocuments().get(0);
+            FetchedRoleModel model = documentFetch.toObject(FetchedRoleModel.class);
+            messageUtils.deleteMessage(jda, model);
+            documentFetch.getReference().delete();
+            System.out.println("Deleted fetch cache");
+        } catch (Exception e) {
+
+        }
+        try{
+            DocumentSnapshot documentBob = futureBob.get().getDocuments().get(0);
+            ToBobifyMembersModel modelBob = documentBob.toObject(ToBobifyMembersModel.class);
+            messageUtils.deleteMessage(jda, modelBob);
+            documentBob.getReference().delete();
+            System.out.println("Deleted bob cache");
+        }catch(Exception e){
+
         }
     }
 }
