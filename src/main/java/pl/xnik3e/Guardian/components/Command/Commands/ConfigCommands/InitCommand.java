@@ -161,6 +161,7 @@ public class InitCommand implements ICommand {
                             " and type *" +model.getPrefix() + "init ban*" :
                             ", mention me and type *init ban*"
             ).append("\nBan command is **required**.");
+            banMessage.append("\nThis option will log any ban actions caused by *purge* command");
             embedBuilder.addField("Ban command", banMessage.toString(), false);
             StringBuilder logMessage = new StringBuilder();
             logMessage.append("In order to set up a log command, go to desired channel").append(
@@ -170,11 +171,12 @@ public class InitCommand implements ICommand {
             ).append("\nLog command is **optional**.");
             embedBuilder.addField("Log command", logMessage.toString(), false);
             StringBuilder echoLogMessage = new StringBuilder();
-            echoLogMessage.append("In order to set up a log command, go to desired channel").append(
+            echoLogMessage.append("In order to set up a echo log command, go to desired channel").append(
                     model.isRespondByPrefix() ?
-                            " and type *" + model.getPrefix() + "init log*" :
-                            ", mention me and type *init log*"
+                            " and type *" + model.getPrefix() + "init echolog*" :
+                            ", mention me and type *init echolog*"
             ).append("\nLog command is **optional**.");
+            echoLogMessage.append("\nEcho log command will send duplicate message to specified channel");
             embedBuilder.addField("Echo log command", echoLogMessage.toString(), false);
             embedBuilder.addField("Aliases", "You can always use a command aliases listed in help command", false);
             embedBuilder.setColor((int)(Math.random() * 0x1000000));

@@ -134,17 +134,17 @@ public class FetchUsersWithRoleCommand implements ICommand {
                             MessageEditBuilder editBuilder = new MessageEditBuilder();
                             List<Map<String, String>> temp = new ArrayList<>();
                             model.setMessageID(message.getId());
-                            model.setUserID(message.getAuthor().getId());
+                            model.setUserID(event != null ? event.getUser().getId() : ctx.getAuthor().getId());
                             model.setChannelId(message.getChannelId());
                             model.setPrivateChannel(message.getChannelType() == ChannelType.PRIVATE);
                             model.setAllEntries(model.getMaps().size());
 
-                            String time = new SimpleDateFormat("HH:mm:ss dd.MM.yyyy").format(new Date(model.getTimestamp()));
+                            String time = new SimpleDateFormat("HH:mm:ss").format(new Date(model.getTimestamp()));
 
                             fireStoreService.setCacheModel(model);
                             eBuilder.setTitle("Fetched role *" + role.getName() + "* users");
                             eBuilder.setDescription("I've found **" + model.getAllEntries() + "** users with role **" + role.getName() + "**");
-                            eBuilder.appendDescription("\n\n**CACHED DATA WILL BE DELETED IN 5 MINUTES** at: " + time + "\n\n");
+                            eBuilder.appendDescription("\n\n**CACHED DATA WILL BE ISSUED FOR DELETION AFTER: **" + time + "\n*ANY REQUESTS AFTER THAT TIME CAN RESULT IN FAILURE*\n");
                             eBuilder.setColor(Color.GREEN);
 
                             int additionalPages = model.getAllEntries() % MAX_USERS == 0 ?

@@ -12,6 +12,4 @@ import java.util.List;
 public class FetchedRoleModel extends BasicCacheModel{
     private String roleID;
     private String roleName;
-
-
 }

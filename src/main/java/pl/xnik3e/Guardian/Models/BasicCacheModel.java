@@ -7,11 +7,11 @@ import java.util.Map;
 
 @Data
 public class BasicCacheModel {
-    protected boolean isPrivateChannel;
-    protected String userID;
-    protected String channelId;
-    protected String messageID;
-    protected int allEntries;
-    protected long timestamp;
-    protected List<Map<String, String>> maps;
+    protected boolean isPrivateChannel;         // true: private channel, false: public channel
+    protected String userID;                    // author id
+    protected String channelId;                 // channel id
+    protected String messageID;                 // message id
+    protected int allEntries;                   // all map entries
+    protected long timestamp;                   // when to delete message
+    protected List<Map<String, String>> maps;   // data
 }

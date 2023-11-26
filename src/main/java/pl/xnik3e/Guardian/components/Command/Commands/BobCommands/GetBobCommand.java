@@ -19,10 +19,9 @@ import pl.xnik3e.Guardian.components.Command.CommandContext;
 import pl.xnik3e.Guardian.components.Command.ICommand;
 
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -118,6 +117,7 @@ public class GetBobCommand implements ICommand {
 
                         ToBobifyMembersModel model = new ToBobifyMembersModel();
                         model.setTimestamp(System.currentTimeMillis() + 1000 * 60 * 5);
+                        String time = new SimpleDateFormat("HH:mm:ss").format(new Date(model.getTimestamp()));
 
                         members.forEach(member -> {
                             mapMember(member, ordinal, maps);
@@ -126,13 +126,14 @@ public class GetBobCommand implements ICommand {
                         model.setAllEntries(maps.size());
                         model.setMessageID(oryginalMessage.getId());
                         model.setChannelId(oryginalMessage.getChannelId());
-                        model.setUserID(oryginalMessage.getAuthor().getId());
+                        model.setUserID(event != null ? event.getUser().getId() : ctx.getAuthor().getId());
                         model.setPrivateChannel(oryginalMessage.getChannelType() == ChannelType.PRIVATE);
                         fireStoreService.setCacheModel(model);
 
                         embedBuilder.setTitle("Bob list");
                         embedBuilder.setDescription("List of users which username are marked as not being mentionable");
                         embedBuilder.appendDescription("\nTo Bobify specific user use `" + fireStoreService.getModel().getPrefix() + "bobify <userID>` command");
+                        embedBuilder.appendDescription("\n\n**CACHED DATA WILL BE ISSUED FOR DELETION AFTER: **" + time + "\n*ANY REQUESTS AFTER THAT TIME CAN RESULT IN FAILURE*\n");
                         embedBuilder.setColor(Color.GREEN);
 
                         int additionalPages = model.getAllEntries() % MAX_USERS == 0 ?

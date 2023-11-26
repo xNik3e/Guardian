@@ -12,7 +12,6 @@ import pl.xnik3e.Guardian.Utils.MessageUtils;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 @Getter
 @Service
@@ -21,6 +20,12 @@ public class FireStoreService {
     private final Firestore firestore;
     private final ConfigModel model;
     private final EnvironmentModel environmentModel;
+    private final CollectionReference COLLECTION_CACHE_FETCH;
+    private final CollectionReference COLLECTION_CACHE_BOB;
+    private final CollectionReference COLLECTION_CACHE_CURSE;
+    private final DocumentReference DOCUMENT_CACHE_FETCH;
+    private final DocumentReference DOCUMENT_CACHE_BOB;
+    private final DocumentReference DOCUMENT_CACHE_CURSE;
 
     @Autowired
     public FireStoreService(Firestore firestore) {
@@ -30,8 +35,23 @@ public class FireStoreService {
         fetchConfigModel();
         fetchEnvironmentModel();
         attachListeners();
-    }
 
+        COLLECTION_CACHE_BOB = firestore.collection("cache")
+                .document("bobifyUsersCommand")
+                .collection("bobifyUsers");
+        COLLECTION_CACHE_FETCH = firestore.collection("cache")
+                .document("fetchUsersWithRoleCommand")
+                .collection("fetchUsers");
+        COLLECTION_CACHE_CURSE = firestore.collection("cache")
+                .document("curseCommand")
+                .collection("curseUsers");
+        DOCUMENT_CACHE_BOB = COLLECTION_CACHE_BOB
+                .document("toBobifyMembersModel");
+        DOCUMENT_CACHE_FETCH = COLLECTION_CACHE_FETCH
+                .document("roleModel");
+        DOCUMENT_CACHE_CURSE = COLLECTION_CACHE_CURSE
+                .document("curseModel");
+    }
 
     private void attachListeners() {
         //Add listener to config to get updates
@@ -208,15 +228,11 @@ public class FireStoreService {
                 DocumentReference reference = null;
                 Class<?> modelClass = model.getClass();
                 if (modelClass.isAssignableFrom(FetchedRoleModel.class)) {
-                    reference = firestore.collection("cache")
-                            .document("fetchUsersWithRoleCommand")
-                            .collection("fetchUsers")
-                            .document("roleModel");
+                    reference = DOCUMENT_CACHE_FETCH;
                 } else if (modelClass.isAssignableFrom(ToBobifyMembersModel.class)) {
-                    reference = firestore.collection("cache")
-                            .document("bobifyUsersCommand")
-                            .collection("bobifyUsers")
-                            .document("toBobifyMembersModel");
+                    reference = DOCUMENT_CACHE_BOB;
+                } else if (modelClass.isAssignableFrom(CurseModel.class)) {
+                    reference = DOCUMENT_CACHE_CURSE;
                 }
                 ApiFuture<WriteResult> future = reference.set(model);
                 if (future.isDone())
@@ -231,15 +247,11 @@ public class FireStoreService {
     public <T extends BasicCacheModel> Optional<T> fetchCache(int page, int maxUsers, @NonNull Class<T> modelClass) {
         ApiFuture<DocumentSnapshot> future = null;
         if (modelClass.isAssignableFrom(FetchedRoleModel.class)) {
-            future = firestore.collection("cache")
-                    .document("fetchUsersWithRoleCommand")
-                    .collection("fetchUsers")
-                    .document("roleModel").get();
+            future = DOCUMENT_CACHE_FETCH.get();
         } else if (modelClass.isAssignableFrom(ToBobifyMembersModel.class)) {
-            future = firestore.collection("cache")
-                    .document("bobifyUsersCommand")
-                    .collection("bobifyUsers")
-                    .document("toBobifyMembersModel").get();
+            future = DOCUMENT_CACHE_BOB.get();
+        }else if (modelClass.isAssignableFrom(CurseModel.class)) {
+            future = DOCUMENT_CACHE_CURSE.get();
         }
 
         try {
@@ -264,19 +276,20 @@ public class FireStoreService {
 
     public <T extends BasicCacheModel> T deleteCacheUntilNow(Class<T> clazz) {
         ApiFuture<QuerySnapshot> future = null;
-        if(clazz.isAssignableFrom(FetchedRoleModel.class)){
-            future = firestore.collection("cache")
-                    .document("fetchUsersWithRoleCommand")
-                    .collection("fetchUsers")
+        if (clazz.isAssignableFrom(FetchedRoleModel.class)) {
+            future = COLLECTION_CACHE_FETCH
                     .whereLessThan("timestamp", (System.currentTimeMillis() + 1000 * 60 * 5))
                     .get();
-        }else if(clazz.isAssignableFrom(ToBobifyMembersModel.class)){
-            future = firestore.collection("cache")
-                    .document("bobifyUsersCommand")
-                    .collection("bobifyUsers")
+        } else if (clazz.isAssignableFrom(ToBobifyMembersModel.class)) {
+            future = COLLECTION_CACHE_BOB
+                    .whereLessThan("timestamp", (System.currentTimeMillis() + 1000 * 60 * 5))
+                    .get();
+        }else if(clazz.isAssignableFrom(CurseModel.class)){
+            future = COLLECTION_CACHE_CURSE
                     .whereLessThan("timestamp", (System.currentTimeMillis() + 1000 * 60 * 5))
                     .get();
         }
+
 
         try {
             QueryDocumentSnapshot snapshot = future.get(5, TimeUnit.SECONDS).getDocuments().get(0);
@@ -290,32 +303,52 @@ public class FireStoreService {
     }
 
     public void autoDeleteCache(JDA jda, MessageUtils messageUtils) {
-        ApiFuture<QuerySnapshot> futureFetch = firestore.collection("cache")
-                .document("fetchUsersWithRoleCommand")
-                .collection("fetchUsers")
-                .whereLessThan("timestamp", (System.currentTimeMillis()))
-                .get();
-        ApiFuture<QuerySnapshot> futureBob = firestore.collection("cache")
-                .document("bobifyUsersCommand")
-                .collection("bobifyUsers")
-                .whereLessThan("timestamp", (System.currentTimeMillis()))
-                .get();
+        deleteFetchCache(jda, messageUtils);
+        deleteBobCache(jda, messageUtils);
+        deleteCurseCache(jda, messageUtils);
+    }
+
+    private void deleteBobCache(JDA jda, MessageUtils messageUtils) {
         try {
+            ApiFuture<QuerySnapshot> futureBob = COLLECTION_CACHE_BOB
+                    .whereLessThan("timestamp", (System.currentTimeMillis()))
+                    .get();
+            DocumentSnapshot documentBob = futureBob.get().getDocuments().get(0);
+            ToBobifyMembersModel modelBob = documentBob.toObject(ToBobifyMembersModel.class);
+            messageUtils.deleteMessage(jda, modelBob);
+            documentBob.getReference().delete();
+            System.out.println("Deleted bob cache");
+        } catch (Exception e) {
+
+        }
+    }
+
+    private void deleteCurseCache(JDA jda, MessageUtils messageUtils) {
+        try {
+            ApiFuture<QuerySnapshot> futureCurse = COLLECTION_CACHE_CURSE
+                    .whereLessThan("timestamp", (System.currentTimeMillis()))
+                    .get();
+            DocumentSnapshot documentCurse = futureCurse.get().getDocuments().get(0);
+            CurseModel modelCurse = documentCurse.toObject(CurseModel.class);
+            messageUtils.deleteMessage(jda, modelCurse);
+            documentCurse.getReference().delete();
+            System.out.println("Deleted curse cache");
+        } catch (Exception e) {
+
+        }
+    }
+
+    private void deleteFetchCache(JDA jda, MessageUtils messageUtils) {
+        try {
+            ApiFuture<QuerySnapshot> futureFetch = COLLECTION_CACHE_FETCH
+                    .whereLessThan("timestamp", (System.currentTimeMillis()))
+                    .get();
             DocumentSnapshot documentFetch = futureFetch.get().getDocuments().get(0);
             FetchedRoleModel model = documentFetch.toObject(FetchedRoleModel.class);
             messageUtils.deleteMessage(jda, model);
             documentFetch.getReference().delete();
             System.out.println("Deleted fetch cache");
         } catch (Exception e) {
-
-        }
-        try{
-            DocumentSnapshot documentBob = futureBob.get().getDocuments().get(0);
-            ToBobifyMembersModel modelBob = documentBob.toObject(ToBobifyMembersModel.class);
-            messageUtils.deleteMessage(jda, modelBob);
-            documentBob.getReference().delete();
-            System.out.println("Deleted bob cache");
-        }catch(Exception e){
 
         }
     }
