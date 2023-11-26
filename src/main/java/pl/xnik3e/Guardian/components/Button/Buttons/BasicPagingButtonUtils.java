@@ -11,6 +11,7 @@ import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageEditBuilder;
 import org.jetbrains.annotations.NotNull;
 import pl.xnik3e.Guardian.Models.BasicCacheModel;
+import pl.xnik3e.Guardian.Models.CurseModel;
 import pl.xnik3e.Guardian.Models.FetchedRoleModel;
 import pl.xnik3e.Guardian.Models.ToBobifyMembersModel;
 import pl.xnik3e.Guardian.Services.FireStoreService;
@@ -84,9 +85,26 @@ public class BasicPagingButtonUtils {
             createFetchUserWithRoleMessage((FetchedRoleModel) model, time, currentPage, pages, maps);
         else if(clazz.isAssignableFrom(ToBobifyMembersModel.class))
             createGetBobMessage((ToBobifyMembersModel) model, time, currentPage, pages, maps);
+        else if(clazz.isAssignableFrom(CurseModel.class))
+            createCurseMessage((CurseModel) model, time, currentPage, pages, maps);
+        eBuilder.appendDescription("\n\n**CACHED DATA WILL BE ISSUED FOR DELETION AFTER: **" + time + "\n*ANY REQUESTS AFTER THAT TIME CAN RESULT IN FAILURE*\n");
 
         event.getHook().editOriginalEmbeds().queue();
         event.getHook().editOriginal(getMessageEditBuilder().build()).queue();
+    }
+
+    private void createCurseMessage(CurseModel model, String time, int currentPage, int pages, List<Map<String, String>> maps) {
+        eBuilder.clear();
+        eBuilder.setTitle("Evil spirits");
+        eBuilder.setDescription("The following members are not blessed with the **kultysta** role");
+        eBuilder.setFooter("Showing page {**" + currentPage + "/" + pages + "**} for [Curse]");
+        eBuilder.setColor(Color.GREEN);
+        maps.forEach(map -> {
+            eBuilder.addField(map.get("effectiveName"), map.get("mention") + "\nJoined: " +
+                    new SimpleDateFormat("yyyy.MM.dd [HH:mm]").format(new Date(Long.parseLong(map.get("timeJoined")))), true);
+        });
+        createBuilder.addActionRow(Button.danger("curse", "Curse them!"));
+        createBuilder.setEmbeds(eBuilder.build());
     }
 
     private void createGetBobMessage(ToBobifyMembersModel model, String time, int currentPage, int pages, List<Map<String, String>> maps) {
@@ -110,7 +128,6 @@ public class BasicPagingButtonUtils {
                 model.getAllEntries() +
                 "** users with role **" +
                 model.getRoleName() + "**");
-        eBuilder.appendDescription("\n\n**CACHED DATA WILL BE DELETED IN 5 MINUTES** at: " + time + "\n\n");
         eBuilder.setFooter("Showing page {**" + currentPage + "/" + pages + "**} for [Fetch]");
         eBuilder.setColor(Color.GREEN);
         maps.forEach(map -> {

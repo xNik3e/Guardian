@@ -31,7 +31,7 @@ public class CurseButton implements IButton {
         event.getMessage().getEmbeds().get(0).getFields().forEach(field -> {
             ids.add(field.getName());
         });
-        messageUtils.banUsers(ids, event.getGuild(), 0, TimeUnit.SECONDS, "Brak roli **kultysta**", false);
+        //messageUtils.banUsers(ids, event.getGuild(), 0, TimeUnit.SECONDS, "Brak roli **kultysta**", false);
     }
 
 

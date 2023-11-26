@@ -3,6 +3,7 @@ package pl.xnik3e.Guardian.components.Button.Buttons;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import pl.xnik3e.Guardian.Models.BasicCacheModel;
+import pl.xnik3e.Guardian.Models.CurseModel;
 import pl.xnik3e.Guardian.Models.FetchedRoleModel;
 import pl.xnik3e.Guardian.Models.ToBobifyMembersModel;
 import pl.xnik3e.Guardian.Services.FireStoreService;
@@ -42,6 +43,9 @@ public class NextPageButton extends BasicPagingButtonUtils implements IButton {
                     return;
                 case "GetBob":
                     fetchCache(event, paramMap, ToBobifyMembersModel.class);
+                    return;
+                case "Curse":
+                    fetchCache(event, paramMap, CurseModel.class);
                     return;
                 default:
                     return;
