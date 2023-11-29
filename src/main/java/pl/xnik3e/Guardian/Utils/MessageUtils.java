@@ -5,7 +5,6 @@ import lombok.NonNull;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.*;
-import net.dv8tion.jda.api.entities.channel.Channel;
 import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
@@ -25,7 +24,7 @@ import pl.xnik3e.Guardian.Models.BasicCacheModel;
 import pl.xnik3e.Guardian.Models.ConfigModel;
 import pl.xnik3e.Guardian.Models.TempBanModel;
 import pl.xnik3e.Guardian.Services.FireStoreService;
-import pl.xnik3e.Guardian.components.Command.CommandContext;
+import pl.xnik3e.Guardian.Components.Command.CommandContext;
 
 import java.awt.*;
 import java.text.DateFormat;
@@ -106,13 +105,7 @@ public class MessageUtils {
      * @return true if message should be processed by bot, false otherwise
      */
     public boolean checkTrigger(MessageReceivedEvent event) {
-        boolean respondByPrefix = configModel
-                .isRespondByPrefix();
-
-        if (respondByPrefix) {
-            return checkPrefix(event);
-        }
-        return checkBotMention(event);
+        return configModel.isRespondByPrefix() ? checkPrefix(event) : checkBotMention(event);
     }
 
     /**
@@ -138,12 +131,11 @@ public class MessageUtils {
      * @return true if message starts with prefix, false otherwise
      */
     private boolean checkPrefix(MessageReceivedEvent event) {
-        String prefix = configModel
-                .getPrefix();
         return event
                 .getMessage()
                 .getContentRaw()
-                .startsWith(prefix);
+                .startsWith(configModel
+                        .getPrefix());
     }
 
     /**
@@ -152,6 +144,7 @@ public class MessageUtils {
      *
      * @param user    Member to send private message to
      * @param message Message to send
+     * @return CompletableFuture<Message> of sent message
      */
     public CompletableFuture<Message> openPrivateChannelAndMessageUser(User user, String message) {
         return user
@@ -166,6 +159,7 @@ public class MessageUtils {
      *
      * @param user    Member to send private message to
      * @param message MessageEmbed to send
+     * @return CompletableFuture<Message> of sent message
      */
     public CompletableFuture<Message> openPrivateChannelAndMessageUser(User user, MessageEmbed message) {
         return user
@@ -180,7 +174,7 @@ public class MessageUtils {
      *
      * @param user    Member to send private message to
      * @param message MessageCreateData to send
-     * @return
+     * @return CompletableFuture<Message> of sent message
      */
     public CompletableFuture<Message> openPrivateChannelAndMessageUser(User user, MessageCreateData message) {
         return user
@@ -195,13 +189,12 @@ public class MessageUtils {
      *
      * @param ctx     CommandContext to get member from
      * @param message Message to send
+     * @return CompletableFuture<Message> of sent message
      */
     public CompletableFuture<Message> respondToUser(CommandContext ctx, String message) {
-        if (configModel.isRespondInDirectMessage()) {
-            return openPrivateChannelAndMessageUser(ctx.getMember().getUser(), message);
-        } else {
-            return ctx.getMessage().reply(message).submit();
-        }
+        return configModel.isRespondInDirectMessage() ?
+                openPrivateChannelAndMessageUser(ctx.getMember().getUser(), message) :
+                ctx.getMessage().reply(message).submit();
     }
 
     /**
@@ -210,13 +203,12 @@ public class MessageUtils {
      *
      * @param ctx     CommandContext to get member from
      * @param message MessageEmbed to send
+     * @return CompletableFuture<Message> of sent message
      */
     public CompletableFuture<Message> respondToUser(CommandContext ctx, MessageEmbed message) {
-        if (configModel.isRespondInDirectMessage()) {
-            return openPrivateChannelAndMessageUser(ctx.getMember().getUser(), message);
-        } else {
-            return ctx.getMessage().replyEmbeds(message).submit();
-        }
+        return configModel.isRespondInDirectMessage() ?
+                openPrivateChannelAndMessageUser(ctx.getMember().getUser(), message) :
+                ctx.getMessage().replyEmbeds(message).submit();
     }
 
     /**
@@ -225,14 +217,12 @@ public class MessageUtils {
      *
      * @param ctx     CommandContext to get member from
      * @param message MessageCreateData to send
-     * @return
+     * @return CompletableFuture<Message> of sent message
      */
     public CompletableFuture<Message> respondToUser(CommandContext ctx, MessageCreateData message) {
-        if (configModel.isRespondInDirectMessage()) {
-            return openPrivateChannelAndMessageUser(ctx.getMember().getUser(), message);
-        } else {
-            return ctx.getMessage().reply(message).submit();
-        }
+        return configModel.isRespondInDirectMessage() ?
+                openPrivateChannelAndMessageUser(ctx.getMember().getUser(), message) :
+                ctx.getMessage().reply(message).submit();
     }
 
     /**
@@ -242,12 +232,12 @@ public class MessageUtils {
      * @param ctx      CommandContext to get member from
      * @param event    SlashCommandInteractionEvent to get hook from
      * @param eBuilder Message to send in form of EmbedBuilder
+     * @return CompletableFuture<Message> of sent message
      */
     public CompletableFuture<Message> respondToUser(CommandContext ctx, SlashCommandInteractionEvent event, EmbedBuilder eBuilder) {
-        if (ctx != null)
-            return respondToUser(ctx, eBuilder.build());
-        else
-            return event.getHook().sendMessageEmbeds(eBuilder.build()).setEphemeral(true).submit();
+        return ctx != null ?
+                respondToUser(ctx, eBuilder.build()) :
+                event.getHook().sendMessageEmbeds(eBuilder.build()).setEphemeral(true).submit();
     }
 
 
@@ -258,12 +248,12 @@ public class MessageUtils {
      * @param ctx     CommandContext to get member from
      * @param event   SlashCommandInteractionEvent to get hook from
      * @param message Message to send in form of MessageCreateData
+     * @return CompletableFuture<Message> of sent message
      */
     public CompletableFuture<Message> respondToUser(CommandContext ctx, SlashCommandInteractionEvent event, MessageCreateData message) {
-        if (ctx != null)
-            return respondToUser(ctx, message);
-        else
-            return event.getHook().sendMessage(message).setEphemeral(true).submit();
+        return ctx != null ?
+                respondToUser(ctx, message) :
+                event.getHook().sendMessage(message).setEphemeral(true).submit();
     }
 
     /**
@@ -275,12 +265,9 @@ public class MessageUtils {
      * @param message         Message to send in form of MessageCreateData
      */
     public CompletableFuture<Message> editOryginalMessage(Message originalMessage, SlashCommandInteractionEvent event, MessageEditData message) {
-        if (event == null)
-            return editUserMessage(originalMessage, message);
-        else {
-            //event.getHook().editOriginalEmbeds().queue();
-            return event.getHook().editOriginal(message).submit();
-        }
+        return event == null ?
+                editUserMessage(originalMessage, message) :
+                event.getHook().editOriginal(message).submit();
     }
 
     private CompletableFuture<Message> editUserMessage(Message originalMessage, MessageEditData message) {
@@ -290,7 +277,6 @@ public class MessageUtils {
             e.printStackTrace();
             return null;
         }
-
     }
 
 
@@ -302,12 +288,9 @@ public class MessageUtils {
      * @return raw command content
      */
     public String rawCommandContent(MessageReceivedEvent event) {
-
         String command = event.getMessage().getContentRaw();
         if (fireStoreService.getModel().isRespondByPrefix()) {
-            String prefix = fireStoreService.getModel()
-                    .getPrefix();
-            command = command.replace(prefix, "");
+            command = command.replace(fireStoreService.getModel().getPrefix(), "");
         } else {
             //delete bot mention
             command = command.replace("<@" + event.getJDA().getSelfUser().getId() + ">", "");
@@ -323,15 +306,28 @@ public class MessageUtils {
      * @param guild         Guild to ban users from
      */
     public void banUsers(List<String> toBeBannedIds, Guild guild, int time, TimeUnit timeUnit, String reason, boolean tempBan) {
-        MessageChannel channel = guild.getChannelById(MessageChannel.class, fireStoreService.getModel().getChannelIdToSendDeletedMessages());
-        MessageChannel logChannel = guild.getChannelById(MessageChannel.class, fireStoreService.getModel().getChannelIdToSendLog());
-        MessageChannel echoChannel = guild.getChannelById(MessageChannel.class, fireStoreService.getModel().getChannelIdToSendEchoLog());
+        ConfigModel configModel = fireStoreService.getModel();
+        MessageChannel logChannel;
+        MessageChannel echoChannel;
+        MessageChannel channel = guild.getChannelById(MessageChannel.class, configModel.getChannelIdToSendDeletedMessages());
+
+        if (!configModel.getChannelIdToSendLog().isEmpty())
+            logChannel = guild.getChannelById(MessageChannel.class, configModel.getChannelIdToSendLog());
+        else {
+            logChannel = null;
+        }
+        if (!configModel.getChannelIdToSendEchoLog().isEmpty())
+            echoChannel = guild.getChannelById(MessageChannel.class, configModel.getChannelIdToSendEchoLog());
+        else {
+            echoChannel = null;
+        }
 
         toBeBannedIds.forEach(id -> {
                     guild.retrieveMemberById(id).queue(member -> {
                         if (tempBan)
                             tempBanUser(member.getUser(), channel, guild, time, timeUnit, reason.isEmpty() ? "" : reason);
-                        //else guild.ban(member.getUser(), 0, TimeUnit.SECONDS).reason(reason).queue();
+                        else
+                            banUser(member.getUser(), channel, guild, reason.isEmpty() ? "" : reason);
                         StringBuilder sb = new StringBuilder();
                         sb
                                 .append("<@")
@@ -339,11 +335,13 @@ public class MessageUtils {
                                 .append("> - ")
                                 .append(member.getUser().getName())
                                 .append(" - ")
-                                .append(tempBan ? "tempban " : "ban ")
-                                .append(time)
-                                .append(" ")
-                                .append(timeUnit.toString())
-                                .append(" - ").append(reason.isEmpty() ? "No reason" : reason);
+                                .append(tempBan ? "tempban" : "ban");
+                        if (time != 0)
+                            sb.append(" ")
+                                    .append(time)
+                                    .append(" ")
+                                    .append(timeUnit.toString());
+                        sb.append(" - ").append(reason.isEmpty() ? "No reason" : reason);
                         if (logChannel != null)
                             logChannel.sendMessage(sb.toString()).queue();
                         if (echoChannel != null)
@@ -391,7 +389,7 @@ public class MessageUtils {
 
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setAuthor(
-                tempBanModel.getUserName() + "has been banned for " + weeks + " weeks and " + days + " days",
+                tempBanModel.getUserName() + " has been banned for " + weeks + " weeks and " + days + " days",
                 null,
                 tempBanModel.getAvatarUrl());
         embedBuilder.setDescription("**Reason:** " + tempBanModel.getReason());
@@ -416,6 +414,48 @@ public class MessageUtils {
                         EmbedBuilder builder = new EmbedBuilder();
                         builder.setTitle("Banned");
                         builder.setDescription("You have been banned from " + guild.getName() + " for " + weeks + " weeks and " + finalDays + " days");
+                        builder.addField("Reason", reason, false);
+                        builder.setColor(Color.RED);
+                        openPrivateChannelAndMessageUser(user, builder.build());
+                    });
+        });
+    }
+
+    private void banUser(@NonNull User user, MessageChannel channel, Guild guild, String reason) {
+        TempBanModel tempBanModel = new TempBanModel();
+        tempBanModel.setUserId(user.getId());
+        tempBanModel.setAvatarUrl(user.getAvatarUrl());
+        tempBanModel.setUserName(user.getName());
+        tempBanModel.setReason(reason);
+        Calendar c = Calendar.getInstance();
+        c.setTime(new Date(System.currentTimeMillis()));
+        c.add(Calendar.YEAR, 69);
+        tempBanModel.setBanTime(c.getTimeInMillis());
+
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setAuthor(
+                user.getName() + " has been banned",
+                null,
+                user.getAvatarUrl());
+        embedBuilder.setDescription("**Reason:** " + tempBanModel.getReason());
+        embedBuilder.setColor(0x5acff5);
+
+        Button button = Button.danger("unban", "Unban");
+
+        MessageCreateData message = new MessageCreateBuilder()
+                .setEmbeds(embedBuilder.build())
+                .setActionRow(button)
+                .build();
+
+        channel.sendMessage(message).queue(m -> {
+            tempBanModel.setMessageId(m.getId());
+            fireStoreService.setTempBanModel(tempBanModel);
+            guild.ban(user, 0, TimeUnit.SECONDS)
+                    .reason(reason)
+                    .queue(s -> {
+                        EmbedBuilder builder = new EmbedBuilder();
+                        builder.setTitle("Banned");
+                        builder.setDescription("You have been banned from " + guild.getName());
                         builder.addField("Reason", reason, false);
                         builder.setColor(Color.RED);
                         openPrivateChannelAndMessageUser(user, builder.build());
@@ -461,7 +501,7 @@ public class MessageUtils {
                 .filter(s -> !s.isEmpty())
                 .map(String::length)
                 .max(Integer::compareTo)
-                .orElseGet(() -> 0);
+                .orElse(0);
 
         percent = (float) (maxSubNickLength * 100) / mentionable.get();
         return percent >= mentionableSegmentRatio;
@@ -475,6 +515,17 @@ public class MessageUtils {
      * @param member Member to bobify
      */
     public void bobify(Member member) {
+        try {
+            MessageCreateData data = getBobifyMessageSentToUser(member);
+            member.modifyNickname("Bob").queue();
+            openPrivateChannelAndMessageUser(member.getUser(), data);
+        } catch (Exception e) {
+            System.err.println("User is higher in hierarchy than bot");
+        }
+    }
+
+    @NotNull
+    private static MessageCreateData getBobifyMessageSentToUser(Member member) {
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setTitle("Nieoznaczalny nick");
         embedBuilder.addField("Nieoznaczalny nick", member.getEffectiveName(), false);
@@ -484,13 +535,7 @@ public class MessageUtils {
                 + "Jeżeli jednak nie chcesz zostać do końca swojego życia Bobem, możesz w każdej chwili zmienić swój nick.\n");
         embedBuilder.setColor(Color.PINK);
         Button button = Button.primary("appeal", "Odwołaj się");
-        MessageCreateData data = new MessageCreateBuilder().setEmbeds(embedBuilder.build()).setActionRow(button).build();
-        try {
-            member.modifyNickname("Bob").queue();
-            openPrivateChannelAndMessageUser(member.getUser(), data);
-        } catch (Exception e) {
-            System.err.println("User is higher in hierarchy than bot");
-        }
+        return new MessageCreateBuilder().setEmbeds(embedBuilder.build()).setActionRow(button).build();
     }
 
 
@@ -498,7 +543,7 @@ public class MessageUtils {
      * Get list of aliases as String.
      * <p></p>
      *
-     * @param aliases
+     * @param aliases List of aliases to get String from
      * @return String of aliases separated by comma
      */
     public String createAliasString(List<String> aliases) {
@@ -506,7 +551,7 @@ public class MessageUtils {
                 .stream()
                 .map(s -> "`" + s + "`")
                 .reduce((s, s2) -> s + ", " + s2)
-                .orElseGet(() -> "No aliases");
+                .orElse("No aliases");
 
     }
 
@@ -520,41 +565,66 @@ public class MessageUtils {
      */
     @Nullable
     public Member getMemberFromButtonEvent(ButtonInteractionEvent event) {
-        Member member = event.getMember();
-        if (event.getGuild() == null) {
-            User user = event.getInteraction().getUser();
-            Guild guild = event.getJDA().getGuildById(fireStoreService.getEnvironmentModel().getGUILD_ID());
-            member = guild.retrieveMemberById(user.getId()).complete();
+        return event.getGuild() == null ?
+                getMemberFromPrivateChannel(event) :
+                event.getMember();
+    }
+
+    private Member getMemberFromPrivateChannel(ButtonInteractionEvent event) {
+        try {
+            return Objects.requireNonNull(
+                            event.getJDA()
+                                    .getGuildById(fireStoreService.getEnvironmentModel().getGUILD_ID()))
+                    .retrieveMemberById(
+                            event.getInteraction()
+                                    .getUser()
+                                    .getId())
+                    .complete();
+        } catch (Exception e) {
+            return null;
         }
-        return member;
     }
 
 
     public <T extends BasicCacheModel> void deleteMessage(JDA jda, T model) {
         new Thread(() -> {
-            try{
-                EmbedBuilder builder = new EmbedBuilder();
-                builder.setTitle("This message has been deleted");
-                builder.setColor(Color.BLUE);
-                MessageEditBuilder messageEditBuilder = new MessageEditBuilder().setEmbeds(builder.build());
-                if(model.isPrivateChannel()){
-                    PrivateChannel privateChannel = jda.getPrivateChannelById(model.getChannelId());
-                    privateChannel.retrieveMessageById(model.getMessageID()).queue(message -> {
-                        if(message.getComponents() != null && !message.getComponents().isEmpty())
-                            message.editMessageComponents().queue();
-                        message.editMessage(messageEditBuilder.build()).queue();
-                    });
-                    return;
-                }
-                TextChannel textChannel = jda.getTextChannelById(model.getChannelId());
-                textChannel.retrieveMessageById(model.getMessageID()).queue(message -> {
-                    if(message.getComponents() != null && !message.getComponents().isEmpty())
-                        message.editMessageComponents().queue();
-                    message.editMessage(messageEditBuilder.build()).queue();
-                });
-            }catch(Exception e){
-                e.printStackTrace();
+            if (model.isPrivateChannel()) {
+                editMessageInPrivateChannel(jda, model);
+            } else {
+                editMessageInGuildTextChannel(jda, model);
             }
         }).start();
+    }
+
+    private static <T extends BasicCacheModel> void editMessageInGuildTextChannel(JDA jda, T model) {
+       try{
+           TextChannel textChannel = jda.getTextChannelById(model.getChannelId());
+           Objects.requireNonNull(textChannel).retrieveMessageById(model.getMessageID()).queue(message -> {
+               message.editMessage(getDeletedMessageEditBuilder().build()).queue();
+           });
+       }catch (Exception e){
+           System.out.println(e.getMessage());
+       }
+
+
+    }
+
+    private static <T extends BasicCacheModel> void editMessageInPrivateChannel(JDA jda, T model) {
+        try{
+            PrivateChannel privateChannel = jda.getPrivateChannelById(model.getChannelId());
+            Objects.requireNonNull(privateChannel).retrieveMessageById(model.getMessageID()).queue(message -> {
+                message.editMessage(getDeletedMessageEditBuilder().build()).queue();
+            });
+        }catch(Exception e){
+            System.out.println(e.getMessage());
+        }
+    }
+
+    @NotNull
+    private static MessageEditBuilder getDeletedMessageEditBuilder() {
+        EmbedBuilder builder = new EmbedBuilder();
+        builder.setTitle("This message has been deleted");
+        builder.setColor(Color.BLUE);
+        return new MessageEditBuilder().setEmbeds(builder.build());
     }
 }

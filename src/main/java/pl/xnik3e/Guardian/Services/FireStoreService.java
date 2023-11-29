@@ -5,6 +5,8 @@ import com.google.cloud.firestore.*;
 import lombok.Getter;
 import lombok.NonNull;
 import net.dv8tion.jda.api.JDA;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import pl.xnik3e.Guardian.Models.*;
@@ -12,6 +14,7 @@ import pl.xnik3e.Guardian.Utils.MessageUtils;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 @Getter
 @Service
@@ -89,26 +92,27 @@ public class FireStoreService {
     }
 
     private synchronized void fetchConfigModel() {
-        ApiFuture<DocumentSnapshot> future = firestore.collection("config").document("config").get();
-        Thread thread = new Thread(() -> {
+        new Thread(() -> {
             try {
-                DocumentSnapshot document = future.get();
-                ConfigModel updatedModel = document.toObject(ConfigModel.class);
-                assert updatedModel != null : "Config model is null";
+                ConfigModel updatedModel = Objects.requireNonNull(firestore.collection("config")
+                        .document("config")
+                        .get()
+                        .get()
+                        .toObject(ConfigModel.class));
                 model.updateConfigModel(updatedModel);
             } catch (Exception e) {
                 System.out.println("Error fetching model from firestore");
             }
-        });
-        thread.start();
+        }).start();
     }
 
     private void fetchEnvironmentModel() {
-        ApiFuture<DocumentSnapshot> future = firestore.collection("global_config").document("environment").get();
         try {
-            DocumentSnapshot document = future.get();
-            EnvironmentModel updatedModel = document.toObject(EnvironmentModel.class);
-            assert updatedModel != null : "Environment model is null";
+            EnvironmentModel updatedModel = Objects.requireNonNull(firestore.collection("global_config")
+                    .document("environment")
+                    .get()
+                    .get()
+                    .toObject(EnvironmentModel.class));
             environmentModel.updateEnvironmentModel(updatedModel);
         } catch (Exception e) {
             System.out.println("Error fetching model from firestore");
@@ -117,106 +121,115 @@ public class FireStoreService {
 
 
     public void updateConfigModel() {
-        ApiFuture<WriteResult> future = firestore.collection("config").document("config").set(model);
-        if (future.isDone()) {
-            System.out.println("Updated config");
-        }
+        firestore.collection("config")
+                .document("config")
+                .set(model);
+
     }
 
 
     public void setTempBanModel(TempBanModel banModel) {
-        ApiFuture<WriteResult> future = firestore.collection("tempbans").document(banModel.getMessageId()).set(banModel);
-        if (future.isDone()) {
-            System.out.println("Added tempban model");
-        }
+        firestore.collection("tempbans")
+                .document(banModel.getMessageId())
+                .set(banModel);
     }
 
     public TempBanModel fetchBanModel(String messageId) {
-        ApiFuture<DocumentSnapshot> future = firestore.collection("tempbans").document(messageId).get();
         try {
-            DocumentSnapshot document = future.get(5, TimeUnit.SECONDS);
-            return document.toObject(TempBanModel.class);
+            return firestore.collection("tempbans")
+                    .document(messageId)
+                    .get()
+                    .get(5, TimeUnit.SECONDS)
+                    .toObject(TempBanModel.class);
         } catch (Exception e) {
             return null;
         }
     }
 
     public void deleteBanModel(String messageId) {
-        ApiFuture<WriteResult> future = firestore.collection("tempbans").document(messageId).delete();
-        if (future.isDone()) {
-            System.out.println("Deleted tempban model");
-        }
+        firestore.collection("tempbans")
+                .document(messageId)
+                .delete();
     }
 
 
     public List<TempBanModel> queryBans() {
-        long now = System.currentTimeMillis();
-        List<TempBanModel> tempBanModels = new ArrayList<>();
-        ApiFuture<QuerySnapshot> future = firestore.collection("tempbans").whereLessThan("banTime", now).get();
         try {
-            future.get(10, TimeUnit.SECONDS).getDocuments().forEach(document -> {
-                TempBanModel tempBanModel = document.toObject(TempBanModel.class);
-                if (tempBanModel != null) {
-                    tempBanModels.add(tempBanModel);
-                }
-            });
-            return tempBanModels;
+            return firestore.collection("tempbans")
+                    .whereLessThan("banTime", System.currentTimeMillis())
+                    .get()
+                    .get(10, TimeUnit.SECONDS)
+                    .getDocuments().stream()
+                    .map(documentSnapshot -> documentSnapshot.toObject(TempBanModel.class))
+                    .toList();
         } catch (Exception e) {
             return null;
         }
     }
 
-    public NickNameModel getNickNameModel(String userID) {
-        ApiFuture<DocumentSnapshot> future = firestore.collection("whitelist").document(userID).get();
+    public NickNameModel fetchNickNameModel(String userID) {
         try {
-            return future.get(5, TimeUnit.SECONDS).toObject(NickNameModel.class);
+            return firestore.collection("whitelist")
+                    .document(userID)
+                    .get()
+                    .get(5, TimeUnit.SECONDS)
+                    .toObject(NickNameModel.class);
         } catch (Exception e) {
             return null;
         }
     }
 
     public boolean checkIfWhitelisted(String UID, String nickName) {
-        ApiFuture<DocumentSnapshot> future = firestore.collection("whitelist").document(UID).get();
         try {
-            DocumentSnapshot snapshot = future.get(5, TimeUnit.SECONDS);
-            return snapshot.toObject(NickNameModel.class).getNickName().contains(nickName);
+            return Objects.requireNonNull(firestore.collection("whitelist")
+                            .document(UID)
+                            .get()
+                            .get(5, TimeUnit.SECONDS)
+                            .toObject(NickNameModel.class))
+                    .getNickName()
+                    .contains(nickName);
         } catch (Exception e) {
             return false;
         }
     }
 
     public void deleteNickNameModel(String userID) {
-        ApiFuture<WriteResult> future = firestore.collection("whitelist").document(userID).delete();
-        if (future.isDone()) {
-            System.out.println("Deleted nickname model");
-        }
+        firestore.collection("whitelist")
+                .document(userID)
+                .delete();
     }
 
-    public void addNickModel(NickNameModel model) {
-        ApiFuture<WriteResult> future = firestore.collection("whitelist").document(model.getUserID()).set(model);
-        if (future.isDone()) {
-            System.out.println("Added nickname model");
-        }
+    public void setNickModel(NickNameModel model) {
+        firestore.collection("whitelist")
+                .document(model.getUserID())
+                .set(model);
     }
 
     public void updateNickModel(NickNameModel model) {
-        ApiFuture<DocumentSnapshot> future = firestore.collection("whitelist").document(model.getUserID()).get();
         try {
-            NickNameModel nickModel = future.get(5, TimeUnit.SECONDS).toObject(NickNameModel.class);
-            if (nickModel != null && !nickModel.getNickName().contains(model.getNickName().get(0)))
-                nickModel.getNickName().add(model.getNickName().get(0));
+            NickNameModel nickModel = Objects.requireNonNull(firestore.collection("whitelist")
+                    .document(model.getUserID())
+                    .get()
+                    .get(5, TimeUnit.SECONDS)
+                    .toObject(NickNameModel.class));
 
-            addNickModel(nickModel);
+            if (!nickModel.getNickName().contains(model.getNickName().get(0)))
+                nickModel.getNickName().add(model.getNickName().get(0));
+            setNickModel(nickModel);
         } catch (Exception e) {
             System.err.println("Error fetching model from firestore. Adding new model");
-            addNickModel(model);
+            setNickModel(model);
         }
     }
 
     public List<String> getWhitelistedNicknames(String userID) {
-        ApiFuture<DocumentSnapshot> future = firestore.collection("whitelist").document(userID).get();
         try {
-            return future.get(5, TimeUnit.SECONDS).toObject(NickNameModel.class).getNickName();
+            return Objects.requireNonNull(firestore.collection("whitelist")
+                            .document(userID)
+                            .get()
+                            .get(5, TimeUnit.SECONDS)
+                            .toObject(NickNameModel.class))
+                    .getNickName();
         } catch (Exception e) {
             return new ArrayList<>();
         }
@@ -225,48 +238,52 @@ public class FireStoreService {
     public <T extends BasicCacheModel> void setCacheModel(T model) {
         new Thread(() -> {
             try {
-                DocumentReference reference = null;
-                Class<?> modelClass = model.getClass();
-                if (modelClass.isAssignableFrom(FetchedRoleModel.class)) {
-                    reference = DOCUMENT_CACHE_FETCH;
-                } else if (modelClass.isAssignableFrom(ToBobifyMembersModel.class)) {
-                    reference = DOCUMENT_CACHE_BOB;
-                } else if (modelClass.isAssignableFrom(CurseModel.class)) {
-                    reference = DOCUMENT_CACHE_CURSE;
-                }
-                ApiFuture<WriteResult> future = reference.set(model);
-                if (future.isDone())
-                    System.out.println("Added cached model");
+                Objects.requireNonNull(
+                                getGenericDocumentReference(model.getClass()))
+                        .set(model);
             } catch (Exception e) {
-                e.printStackTrace();
                 System.err.println("Error while setting cache model");
             }
         }).start();
     }
 
-    public <T extends BasicCacheModel> Optional<T> fetchCache(int page, int maxUsers, @NonNull Class<T> modelClass) {
-        ApiFuture<DocumentSnapshot> future = null;
-        if (modelClass.isAssignableFrom(FetchedRoleModel.class)) {
-            future = DOCUMENT_CACHE_FETCH.get();
-        } else if (modelClass.isAssignableFrom(ToBobifyMembersModel.class)) {
-            future = DOCUMENT_CACHE_BOB.get();
-        }else if (modelClass.isAssignableFrom(CurseModel.class)) {
-            future = DOCUMENT_CACHE_CURSE.get();
-        }
+    @NotNull
+    private <T extends BasicCacheModel> ApiFuture<DocumentSnapshot> getDocumentSnapshotApiFuture(@NotNull Class<T> modelClass) {
+        return Objects.requireNonNull(getGenericDocumentReference(modelClass))
+                .get();
+    }
 
+    private <T extends BasicCacheModel> DocumentReference getGenericDocumentReference(@NonNull Class<T> modelClass) {
+        if (modelClass.isAssignableFrom(FetchedRoleModel.class)) {
+            return DOCUMENT_CACHE_FETCH;
+        } else if (modelClass.isAssignableFrom(ToBobifyMembersModel.class)) {
+            return DOCUMENT_CACHE_BOB;
+        } else if (modelClass.isAssignableFrom(CurseModel.class)) {
+            return DOCUMENT_CACHE_CURSE;
+        }
+        return null;
+    }
+
+    public <T extends BasicCacheModel> Optional<T> fetchAllCache(@NonNull Class<T> modelClass) {
         try {
-            T model = Objects.requireNonNull(future.get(10, TimeUnit.SECONDS).toObject(modelClass));
-            model.setMaps(model
-                    .getMaps()
-                    .stream()
-                    .sorted(Comparator
-                            .comparingInt(o -> Integer.parseInt(o
-                                    .get("ordinal")))
-                    ).filter(map -> {
-                        int ordinal = Integer.parseInt(map.get("ordinal"));
-                        return ordinal >= (page - 1) * maxUsers && ordinal < page * maxUsers;
-                    })
-                    .toList());
+            return Optional.ofNullable(Objects.requireNonNull(getGenericDocumentReference(modelClass))
+                    .get()
+                    .get(10, TimeUnit.SECONDS)
+                    .toObject(modelClass));
+        } catch (Exception e) {
+            return Optional.empty();
+        }
+    }
+
+    public <T extends BasicCacheModel> Optional<T> fetchCache(int page, int maxUsers, @NonNull Class<T> modelClass) {
+        try {
+            T model = Objects.requireNonNull(getDocumentSnapshotApiFuture(modelClass))
+                    .get(10, TimeUnit.SECONDS)
+                    .toObject(modelClass);
+
+            assert model != null;
+            model.setMaps(getFilteredMaps(model,
+                    integer -> integer >= (page - 1) * maxUsers && integer < page * maxUsers));
 
             return Optional.of(model);
         } catch (Exception e) {
@@ -274,32 +291,44 @@ public class FireStoreService {
         }
     }
 
+    @NotNull
+    private static <T extends BasicCacheModel> List<Map<String, String>> getFilteredMaps(T model, Predicate<Integer> pagePredicate) {
+        return model
+                .getMaps()
+                .stream()
+                .sorted(Comparator
+                        .comparingInt(o -> Integer.parseInt(o
+                                .get("ordinal")))
+                ).filter(map -> pagePredicate.test(Integer.parseInt(map.get("ordinal"))))
+                .toList();
+    }
+
     public <T extends BasicCacheModel> T deleteCacheUntilNow(Class<T> clazz) {
-        ApiFuture<QuerySnapshot> future = null;
-        if (clazz.isAssignableFrom(FetchedRoleModel.class)) {
-            future = COLLECTION_CACHE_FETCH
-                    .whereLessThan("timestamp", (System.currentTimeMillis() + 1000 * 60 * 5))
-                    .get();
-        } else if (clazz.isAssignableFrom(ToBobifyMembersModel.class)) {
-            future = COLLECTION_CACHE_BOB
-                    .whereLessThan("timestamp", (System.currentTimeMillis() + 1000 * 60 * 5))
-                    .get();
-        }else if(clazz.isAssignableFrom(CurseModel.class)){
-            future = COLLECTION_CACHE_CURSE
-                    .whereLessThan("timestamp", (System.currentTimeMillis() + 1000 * 60 * 5))
-                    .get();
-        }
-
-
         try {
-            QueryDocumentSnapshot snapshot = future.get(5, TimeUnit.SECONDS).getDocuments().get(0);
-            T deletedModel = snapshot.toObject(clazz);
+            T deletedModel = Objects.requireNonNull(getGenericCollectionReference(clazz))
+                    .whereLessThan("timestamp", (System.currentTimeMillis() + 1000 * 60 * 5))
+                    .get()
+                    .get(5, TimeUnit.SECONDS)
+                    .getDocuments()
+                    .get(0)
+                    .toObject(clazz);
             System.out.println("Deleted cache");
             return deletedModel;
         } catch (Exception e) {
             System.err.println("Error deleting cache");
             return null;
         }
+    }
+
+    private <T extends BasicCacheModel> CollectionReference getGenericCollectionReference(Class<T> clazz) {
+        if (clazz.isAssignableFrom(FetchedRoleModel.class)) {
+            return COLLECTION_CACHE_FETCH;
+        } else if (clazz.isAssignableFrom(ToBobifyMembersModel.class)) {
+            return COLLECTION_CACHE_BOB;
+        } else if (clazz.isAssignableFrom(CurseModel.class)) {
+           return COLLECTION_CACHE_CURSE;
+        }
+        return null;
     }
 
     public void autoDeleteCache(JDA jda, MessageUtils messageUtils) {
@@ -310,10 +339,12 @@ public class FireStoreService {
 
     private void deleteBobCache(JDA jda, MessageUtils messageUtils) {
         try {
-            ApiFuture<QuerySnapshot> futureBob = COLLECTION_CACHE_BOB
+            DocumentSnapshot documentBob = COLLECTION_CACHE_BOB
                     .whereLessThan("timestamp", (System.currentTimeMillis()))
-                    .get();
-            DocumentSnapshot documentBob = futureBob.get().getDocuments().get(0);
+                    .get()
+                    .get()
+                    .getDocuments()
+                    .get(0);
             ToBobifyMembersModel modelBob = documentBob.toObject(ToBobifyMembersModel.class);
             messageUtils.deleteMessage(jda, modelBob);
             documentBob.getReference().delete();
@@ -325,12 +356,14 @@ public class FireStoreService {
 
     private void deleteCurseCache(JDA jda, MessageUtils messageUtils) {
         try {
-            ApiFuture<QuerySnapshot> futureCurse = COLLECTION_CACHE_CURSE
+            DocumentSnapshot documentCurse = COLLECTION_CACHE_CURSE
                     .whereLessThan("timestamp", (System.currentTimeMillis()))
-                    .get();
-            DocumentSnapshot documentCurse = futureCurse.get().getDocuments().get(0);
-            CurseModel modelCurse = documentCurse.toObject(CurseModel.class);
-            messageUtils.deleteMessage(jda, modelCurse);
+                    .get()
+                    .get()
+                    .getDocuments()
+                    .get(0);
+            CurseModel model = documentCurse.toObject(CurseModel.class);
+            messageUtils.deleteMessage(jda, model);
             documentCurse.getReference().delete();
             System.out.println("Deleted curse cache");
         } catch (Exception e) {
@@ -340,10 +373,12 @@ public class FireStoreService {
 
     private void deleteFetchCache(JDA jda, MessageUtils messageUtils) {
         try {
-            ApiFuture<QuerySnapshot> futureFetch = COLLECTION_CACHE_FETCH
+            DocumentSnapshot documentFetch = COLLECTION_CACHE_FETCH
                     .whereLessThan("timestamp", (System.currentTimeMillis()))
-                    .get();
-            DocumentSnapshot documentFetch = futureFetch.get().getDocuments().get(0);
+                    .get()
+                    .get()
+                    .getDocuments()
+                    .get(0);
             FetchedRoleModel model = documentFetch.toObject(FetchedRoleModel.class);
             messageUtils.deleteMessage(jda, model);
             documentFetch.getReference().delete();
