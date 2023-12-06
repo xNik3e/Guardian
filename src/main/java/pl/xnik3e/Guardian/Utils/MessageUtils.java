@@ -373,19 +373,20 @@ public class MessageUtils {
 
     private void tempBanUser(@NonNull User user, MessageChannel channel, Guild guild, long time, TimeUnit timeUnit, String reason) {
         TempBanModel tempBanModel = new TempBanModel();
-        tempBanModel.setUserId(user.getId());
-        tempBanModel.setAvatarUrl(user.getAvatarUrl());
-        tempBanModel.setUserName(user.getName());
-        tempBanModel.setReason(reason);
-
         long timeInMillis = System.currentTimeMillis() + timeUnit.toMillis(time);
-        tempBanModel.setBanTime(timeInMillis);
 
         //get time difference between current time and ban time in days
         Date date = new Date(timeInMillis);
         long days = (date.getTime() - System.currentTimeMillis()) / (1000 * 60 * 60 * 24);
         long weeks = days / 7;
         days = days % 7;
+
+        tempBanModel.setUserId(user.getId());
+        tempBanModel.setAvatarUrl(user.getAvatarUrl());
+        tempBanModel.setUserName(user.getName());
+        tempBanModel.setReason(reason);
+        tempBanModel.setBanTime(timeInMillis);
+
 
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setAuthor(
