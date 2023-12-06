@@ -7,6 +7,7 @@ import net.dv8tion.jda.api.entities.channel.Channel;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import org.jetbrains.annotations.NotNull;
 import pl.xnik3e.Guardian.Models.ConfigModel;
+import pl.xnik3e.Guardian.Models.ContextModel;
 import pl.xnik3e.Guardian.Services.FireStoreService;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
 import pl.xnik3e.Guardian.Components.Command.CommandContext;
@@ -244,36 +245,6 @@ public class InitCommand implements ICommand {
                 + context.channel.getName() + "**");
         embedBuilder.setColor(Color.GREEN);
         return embedBuilder;
-    }
-
-    protected class ContextModel {
-        Guild guild;
-        Channel channel;
-        List<String> args;
-        From from;
-        CommandContext ctx;
-        SlashCommandInteractionEvent event;
-
-        ContextModel(CommandContext ctx) {
-            this.guild = ctx.getGuild();
-            this.channel = ctx.getChannel();
-            this.args = ctx.getArgs();
-            this.from = From.CONTEXT;
-            this.ctx = ctx;
-        }
-
-        ContextModel(SlashCommandInteractionEvent event, List<String> args) {
-            this.guild = event.getGuild();
-            this.channel = event.getChannel();
-            this.args = args;
-            this.from = From.EVENT;
-            this.event = event;
-        }
-
-        protected enum From {
-            EVENT,
-            CONTEXT
-        }
     }
 
 
