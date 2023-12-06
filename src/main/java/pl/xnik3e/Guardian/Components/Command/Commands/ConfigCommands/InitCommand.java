@@ -5,6 +5,7 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.channel.Channel;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import org.jetbrains.annotations.NotNull;
 import pl.xnik3e.Guardian.Models.ConfigModel;
 import pl.xnik3e.Guardian.Services.FireStoreService;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
@@ -28,20 +29,15 @@ public class InitCommand implements ICommand {
 
     @Override
     public void handle(CommandContext ctx) {
-        boolean deleteTriggerMessage = fireStoreService.getModel().isDeleteTriggerMessage();
-        if(deleteTriggerMessage)
-            ctx.getMessage().delete().queue();
-        Guild guild = ctx.getGuild();
-        Channel channel = ctx.getChannel();
-        List<String> args = ctx.getArgs();
-        configInit(ctx, args, channel, guild, null);
+        messageUtils.deleteTrigger(ctx);
+        ContextModel context = new ContextModel(ctx);
+        configInit(context);
     }
 
     @Override
     public void handleSlash(SlashCommandInteractionEvent event, List<String> args) {
-        Guild guild = event.getGuild();
-        Channel channel = event.getChannel();
-        configInit(null, args, channel, guild, event);
+        ContextModel context = new ContextModel(event, args);
+        configInit(context);
     }
 
     @Override
@@ -57,7 +53,7 @@ public class InitCommand implements ICommand {
         embedBuilder.addField("Optional arguments", "`ban`, `log`, `echolog`", false);
         embedBuilder.addField("Usage", "`{prefix or mention} init {optional <ban, log or echolog>}`", false);
         embedBuilder.addField("Available aliases", messageUtils.createAliasString(getAliases()), false);
-        Color color = new Color((int)(Math.random() * 0x1000000));
+        Color color = new Color((int) (Math.random() * 0x1000000));
         embedBuilder.setColor(color);
         return embedBuilder.build();
     }
@@ -82,105 +78,201 @@ public class InitCommand implements ICommand {
         return false;
     }
 
-    private void configInit(CommandContext ctx, List<String> args, Channel channel, Guild guild,SlashCommandInteractionEvent event) {
-        EmbedBuilder embedBuilder = new EmbedBuilder();
-        if (args.size() == 1) {
-            String arg = args.get(0);
+    private void configInit(ContextModel context) {
+        if (context.args.size() == 1) {
+            String arg = context.args.get(0);
             switch (arg) {
                 case "ban":
-                    String previousChannel = model.getChannelIdToSendDeletedMessages();
-                    model.setChannelIdToSendDeletedMessages(channel.getId());
-                    if (previousChannel.isEmpty()) {
-                        embedBuilder.setTitle("Ban channel set");
-                        embedBuilder.setDescription("Setting up the ban utility for channel: **"
-                                + channel.getName() +"**");
-                        embedBuilder.setColor(Color.GREEN);
-                        messageUtils.respondToUser(ctx, event, embedBuilder);
-                    } else {
-                        embedBuilder.setTitle("Ban channel changed");
-                        embedBuilder.setDescription("Setting up the ban utility for channel: **"
-                                + channel.getName() + "**"
-                                + "\nPrevious channel was: **" + guild.getChannelById(Channel.class, previousChannel).getName() +"**");
-                        embedBuilder.setColor(Color.GREEN);
-                        messageUtils.respondToUser(ctx, event, embedBuilder);
-                    }
-                    model.setInit(true);
-                    fireStoreService.updateConfigModel();
+                    ban(context);
                     break;
                 case "log":
-                    String previousLogChannel = model.getChannelIdToSendLog();
-                    model.setChannelIdToSendLog(channel.getId());
-                    if (previousLogChannel.isEmpty()) {
-                        embedBuilder.setTitle("Log channel set");
-                        embedBuilder.setDescription("Setting up the log utility for channel: **"
-                                + channel.getName() +"**");
-                        embedBuilder.setColor(Color.GREEN);
-                        messageUtils.respondToUser(ctx, event, embedBuilder);
-                    } else {
-                        embedBuilder.setTitle("Log channel changed");
-                        embedBuilder.setDescription("Setting up the log utility for channel: **"
-                                + channel.getName() + "**"
-                                + "\nPrevious channel was: **" + guild.getChannelById(Channel.class, previousLogChannel).getName() +"**");
-                        embedBuilder.setColor(Color.GREEN);
-                        messageUtils.respondToUser(ctx, event, embedBuilder);
-                    }
-                    fireStoreService.updateConfigModel();
+                    log(context);
                     break;
                 case "echolog":
-                    String previousEchoLogChannel = model.getChannelIdToSendEchoLog();
-                    model.setChannelIdToSendEchoLog(channel.getId());
-                    if(previousEchoLogChannel.isEmpty()){
-                        embedBuilder.setTitle("Echo Log channel set");
-                        embedBuilder.setDescription("Setting up the echo log utility for channel: **"
-                                + channel.getName() +"**");
-                        embedBuilder.setColor(Color.GREEN);
-                        messageUtils.respondToUser(ctx, event, embedBuilder);
-                    }else{
-                        embedBuilder.setTitle("Echo Log channel changed");
-                        embedBuilder.setDescription("Setting up the echo log utility for channel: **"
-                                + channel.getName() + "**"
-                                + "\nPrevious channel was: **" + guild.getChannelById(Channel.class, previousEchoLogChannel).getName() +"**");
-                        embedBuilder.setColor(Color.GREEN);
-                    }
-                    fireStoreService.updateConfigModel();
+                    echoLog(context);
                     break;
                 default:
-                    embedBuilder.setTitle("Error");
-                    embedBuilder.setDescription("Invalid argument");
-                    embedBuilder.addField("Valid arguments", "`ban`, `log`", false);
-                    embedBuilder.setColor(Color.RED);
-                    messageUtils.respondToUser(ctx, event, embedBuilder);
+                    sendErrorInvalidArgs(context);
                     break;
             }
         } else {
-            embedBuilder.setTitle("Hey! Let's get started!");
-            embedBuilder.setDescription("I will guide you through the setup process");
-            StringBuilder banMessage = new StringBuilder();
-            banMessage.append("In order to set up a ban command, go to desired channel").append(
-                    model.isRespondByPrefix() ?
-                            " and type *" +model.getPrefix() + "init ban*" :
-                            ", mention me and type *init ban*"
-            ).append("\nBan command is **required**.");
-            banMessage.append("\nThis option will log any ban actions caused by *purge* command");
-            embedBuilder.addField("Ban command", banMessage.toString(), false);
-            StringBuilder logMessage = new StringBuilder();
-            logMessage.append("In order to set up a log command, go to desired channel").append(
-                    model.isRespondByPrefix() ?
-                            " and type *" + model.getPrefix() + "init log*" :
-                            ", mention me and type *init log*"
-            ).append("\nLog command is **optional**.");
-            embedBuilder.addField("Log command", logMessage.toString(), false);
-            StringBuilder echoLogMessage = new StringBuilder();
-            echoLogMessage.append("In order to set up a echo log command, go to desired channel").append(
-                    model.isRespondByPrefix() ?
-                            " and type *" + model.getPrefix() + "init echolog*" :
-                            ", mention me and type *init echolog*"
-            ).append("\nLog command is **optional**.");
-            echoLogMessage.append("\nEcho log command will send duplicate message to specified channel");
-            embedBuilder.addField("Echo log command", echoLogMessage.toString(), false);
-            embedBuilder.addField("Aliases", "You can always use a command aliases listed in help command", false);
-            embedBuilder.setColor((int)(Math.random() * 0x1000000));
-            messageUtils.respondToUser(ctx, event, embedBuilder);
+            messageUtils.respondToUser(context.ctx, context.event, createDefaultInitMessage());
+        }
+    }
+
+    private EmbedBuilder createDefaultInitMessage() {
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setTitle("Hey! Let's get started!");
+        embedBuilder.setDescription("I will guide you through the setup process");
+        addBanMessage(embedBuilder);
+        addLogMessage(embedBuilder);
+        addEchoLogMessage(embedBuilder);
+        embedBuilder.addField("Aliases", "You can always use a command aliases listed in help command", false);
+        embedBuilder.setColor((int) (Math.random() * 0x1000000));
+        return embedBuilder;
+    }
+
+    private void sendErrorInvalidArgs(ContextModel context) {
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setTitle("Error");
+        embedBuilder.setDescription("Invalid argument");
+        embedBuilder.addField("Valid arguments", messageUtils.createAliasString(getAliases()), false);
+        embedBuilder.setColor(Color.RED);
+        messageUtils.respondToUser(context.ctx, context.event, embedBuilder);
+    }
+
+    private void ban(ContextModel context) {
+        String previousChannel = model.getChannelIdToSendDeletedMessages();
+        model.setChannelIdToSendDeletedMessages(context.channel.getId());
+        if (previousChannel.isEmpty()) {
+            messageUtils.respondToUser(context.ctx, context.event, getBanEmbedBuilderNoPreviousChannel(context));
+        } else {
+            messageUtils.respondToUser(context.ctx, context.event, getBanEmbedBuilderWithPreviousChannel(context, previousChannel));
+        }
+        model.setInit(true);
+        fireStoreService.updateConfigModel();
+    }
+
+    private void log(ContextModel context) {
+        String previousLogChannel = model.getChannelIdToSendLog();
+        model.setChannelIdToSendLog(context.channel.getId());
+        if (previousLogChannel.isEmpty()) {
+            messageUtils.respondToUser(context.ctx, context.event, getLogEmbedBuilderNoPreviousChannel(context));
+        } else {
+            messageUtils.respondToUser(context.ctx, context.event, getLogEmbedBuilderWithPreviousChannel(context, previousLogChannel));
+        }
+        fireStoreService.updateConfigModel();
+    }
+
+    private void echoLog(ContextModel context) {
+        String previousEchoLogChannel = model.getChannelIdToSendEchoLog();
+        model.setChannelIdToSendEchoLog(context.channel.getId());
+        if (previousEchoLogChannel.isEmpty()) {
+            messageUtils.respondToUser(context.ctx, context.event, getEchoLogEmbedBuilderNoPreviousChannel(context));
+        } else {
+            messageUtils.respondToUser(context.ctx, context.event, getEchoLogEmbedBuilderWithPreviousChannel(context, previousEchoLogChannel));
+        }
+        fireStoreService.updateConfigModel();
+    }
+
+    private void addBanMessage(EmbedBuilder embedBuilder) {
+        String banMessage = "In order to set up a ban command, go to desired channel" +
+                (model.isRespondByPrefix() ?
+                        " and type *" + model.getPrefix() + "init ban*" :
+                        ", mention me and type *init ban*") +
+                "\nBan command is **required**." +
+                "\nThis option will log any ban actions caused by *purge* command";
+        embedBuilder.addField("Ban command", banMessage, false);
+    }
+
+    private void addLogMessage(EmbedBuilder embedBuilder) {
+        String logMessage = "In order to set up a log command, go to desired channel" +
+                (model.isRespondByPrefix() ?
+                        " and type *" + model.getPrefix() + "init log*" :
+                        ", mention me and type *init log*") +
+                "\nLog command is **optional**.";
+        embedBuilder.addField("Log command", logMessage, false);
+    }
+
+    private void addEchoLogMessage(EmbedBuilder embedBuilder) {
+        String echoLogMessage = "In order to set up a echo log command, go to desired channel" +
+                (model.isRespondByPrefix() ?
+                        " and type *" + model.getPrefix() + "init echolog*" :
+                        ", mention me and type *init echolog*") +
+                "\nLog command is **optional**." +
+                "\nEcho log command will send duplicate message to specified channel";
+        embedBuilder.addField("Echo log command", echoLogMessage, false);
+    }
+
+    private static EmbedBuilder getEchoLogEmbedBuilderWithPreviousChannel(ContextModel context, String previousEchoLogChannel) {
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setTitle("Echo Log channel changed");
+        embedBuilder.setDescription("Setting up the echo log utility for channel: **"
+                + context.channel.getName() + "**"
+                + "\nPrevious channel was: **" + context.guild.getChannelById(Channel.class, previousEchoLogChannel).getName() + "**");
+        embedBuilder.setColor(Color.GREEN);
+        return embedBuilder;
+    }
+
+    @NotNull
+    private static EmbedBuilder getEchoLogEmbedBuilderNoPreviousChannel(ContextModel context) {
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setTitle("Echo Log channel set");
+        embedBuilder.setDescription("Setting up the echo log utility for channel: **"
+                + context.channel.getName() + "**");
+        embedBuilder.setColor(Color.GREEN);
+        return embedBuilder;
+    }
+
+    @NotNull
+    private static EmbedBuilder getLogEmbedBuilderWithPreviousChannel(ContextModel context, String previousLogChannel) {
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setTitle("Log channel changed");
+        embedBuilder.setDescription("Setting up the log utility for channel: **"
+                + context.channel.getName() + "**"
+                + "\nPrevious channel was: **" + context.guild.getChannelById(Channel.class, previousLogChannel).getName() + "**");
+        embedBuilder.setColor(Color.GREEN);
+        return embedBuilder;
+    }
+
+    @NotNull
+    private static EmbedBuilder getLogEmbedBuilderNoPreviousChannel(ContextModel context) {
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setTitle("Log channel set");
+        embedBuilder.setDescription("Setting up the log utility for channel: **"
+                + context.channel.getName() + "**");
+        embedBuilder.setColor(Color.GREEN);
+        return embedBuilder;
+    }
+
+    @NotNull
+    private static EmbedBuilder getBanEmbedBuilderWithPreviousChannel(ContextModel context, String previousChannel) {
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setTitle("Ban channel changed");
+        embedBuilder.setDescription("Setting up the ban utility for channel: **"
+                + context.channel.getName() + "**"
+                + "\nPrevious channel was: **" + context.guild.getChannelById(Channel.class, previousChannel).getName() + "**");
+        embedBuilder.setColor(Color.GREEN);
+        return embedBuilder;
+    }
+
+    @NotNull
+    private static EmbedBuilder getBanEmbedBuilderNoPreviousChannel(ContextModel context) {
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setTitle("Ban channel set");
+        embedBuilder.setDescription("Setting up the ban utility for channel: **"
+                + context.channel.getName() + "**");
+        embedBuilder.setColor(Color.GREEN);
+        return embedBuilder;
+    }
+
+    protected class ContextModel {
+        Guild guild;
+        Channel channel;
+        List<String> args;
+        From from;
+        CommandContext ctx;
+        SlashCommandInteractionEvent event;
+
+        ContextModel(CommandContext ctx) {
+            this.guild = ctx.getGuild();
+            this.channel = ctx.getChannel();
+            this.args = ctx.getArgs();
+            this.from = From.CONTEXT;
+            this.ctx = ctx;
+        }
+
+        ContextModel(SlashCommandInteractionEvent event, List<String> args) {
+            this.guild = event.getGuild();
+            this.channel = event.getChannel();
+            this.args = args;
+            this.from = From.EVENT;
+            this.event = event;
+        }
+
+        protected enum From {
+            EVENT,
+            CONTEXT
         }
     }
 
