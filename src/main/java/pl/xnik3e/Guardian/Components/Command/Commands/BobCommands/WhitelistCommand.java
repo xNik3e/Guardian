@@ -2,8 +2,11 @@ package pl.xnik3e.Guardian.Components.Command.Commands.BobCommands;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import org.jetbrains.annotations.NotNull;
+import pl.xnik3e.Guardian.Models.ContextModel;
 import pl.xnik3e.Guardian.Services.FireStoreService;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
 import pl.xnik3e.Guardian.Components.Command.CommandContext;
@@ -28,16 +31,13 @@ public class WhitelistCommand implements ICommand {
 
     @Override
     public void handle(CommandContext ctx) {
-        boolean deleteTriggerMessage = fireStoreService.getModel().isDeleteTriggerMessage();
-        if (deleteTriggerMessage)
-            ctx.getMessage().delete().queue();
-        List<String> args = ctx.getArgs();
-        getWhitelist(ctx, null, args, ctx.getGuild());
+        messageUtils.deleteTrigger(ctx);
+        getWhitelist(new ContextModel(ctx));
     }
 
     @Override
     public void handleSlash(SlashCommandInteractionEvent event, List<String> args) {
-        getWhitelist(null, event, args, event.getGuild());
+        getWhitelist(new ContextModel(event, args));
     }
 
     @Override
@@ -83,40 +83,53 @@ public class WhitelistCommand implements ICommand {
         return List.of("wl");
     }
 
-    public void getWhitelist(CommandContext ctx, SlashCommandInteractionEvent event, List<String> args, Guild guild){
-        EmbedBuilder eBuilder = new EmbedBuilder();
-        if (args.isEmpty()) {
-            eBuilder.setTitle("An error occurred");
-            eBuilder.setDescription("Please provide valid user id or mention");
-            eBuilder.setColor(Color.RED);
-            messageUtils.respondToUser(ctx, event, eBuilder);
+    public void getWhitelist(ContextModel context){
+        if (context.args.isEmpty()) {
+            sendErrorEmptyArgument(context);
             return;
         }
+
         Matcher matcher = Pattern.compile("\\d+")
-                .matcher(args.get(0));
+                .matcher(context.args.get(0));
         if (!matcher.find()) {
-            messageUtils.respondToUser(ctx, event, eBuilder);
+            sendErrorEmptyArgument(context);
             return;
         }
         String userId = matcher.group();
-        guild.retrieveMemberById(userId).queue(member -> {
-            String id = member.getId();
-            StringBuilder stringBuilder = new StringBuilder();
-            AtomicInteger index = new AtomicInteger(1);
-            fireStoreService.getWhitelistedNicknames(id)
-                    .stream()
-                    .map(nick -> index.getAndIncrement() + ". " + nick + "\n")
-                    .forEachOrdered(stringBuilder::append);
-            eBuilder.setTitle("Whitelisted nicknames for user " + member.getEffectiveName());
-            eBuilder.setDescription(stringBuilder.toString().isEmpty() ? "No whitelisted nicknames found" : stringBuilder.toString());
-            eBuilder.setColor(stringBuilder.toString().isEmpty() ? Color.YELLOW : Color.GREEN);
-            messageUtils.respondToUser(ctx, event, eBuilder);
+        context.guild.retrieveMemberById(userId).queue(member -> {
+            messageUtils.respondToUser(context.ctx, context.event, getWhitelistedNicknamesEmbedBuilder(member));
         }, error -> {
-            eBuilder.setTitle("An error occurred");
-            eBuilder.setDescription("Please provide valid user id or mention");
-            eBuilder.setColor(Color.RED);
-            messageUtils.respondToUser(ctx, event, eBuilder);
+            sendErrorEmptyArgument(context);
         });
+    }
+
+    @NotNull
+    private EmbedBuilder getWhitelistedNicknamesEmbedBuilder(Member member) {
+        StringBuilder stringBuilder = getMemberWhitelistedNicknames(member);
+
+        return new EmbedBuilder()
+                .setTitle("Whitelisted nicknames for user " + member.getEffectiveName())
+                .setDescription(stringBuilder.toString().isEmpty() ? "No whitelisted nicknames found" : stringBuilder.toString())
+                .setColor(stringBuilder.toString().isEmpty() ? Color.YELLOW : Color.GREEN);
+    }
+
+    @NotNull
+    private StringBuilder getMemberWhitelistedNicknames(Member member) {
+        StringBuilder stringBuilder = new StringBuilder();
+        AtomicInteger index = new AtomicInteger(1);
+        fireStoreService.getWhitelistedNicknames(member.getId())
+                .stream()
+                .map(nick -> index.getAndIncrement() + ". " + nick + "\n")
+                .forEachOrdered(stringBuilder::append);
+        return stringBuilder;
+    }
+
+    private void sendErrorEmptyArgument(ContextModel context) {
+        EmbedBuilder eBuilder = new EmbedBuilder();
+        eBuilder.setTitle("An error occurred");
+        eBuilder.setDescription("Please provide valid user id or mention");
+        eBuilder.setColor(Color.RED);
+        messageUtils.respondToUser(context.ctx, context.event, eBuilder);
     }
 
 
