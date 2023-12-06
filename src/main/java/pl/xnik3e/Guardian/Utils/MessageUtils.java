@@ -628,4 +628,10 @@ public class MessageUtils {
         builder.setColor(Color.BLUE);
         return new MessageEditBuilder().setEmbeds(builder.build());
     }
+
+    public void deleteTrigger(CommandContext ctx) {
+        boolean deleteTriggerMessage = fireStoreService.getModel().isDeleteTriggerMessage();
+        if(deleteTriggerMessage)
+            ctx.getMessage().delete().queue();
+    }
 }

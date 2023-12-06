@@ -24,18 +24,19 @@ public class TogglePrefixCommand implements ICommand {
 
     @Override
     public void handle(CommandContext ctx) {
-        boolean deleteTriggerMessage = fireStoreService.getModel().isDeleteTriggerMessage();
-        if(deleteTriggerMessage)
-            ctx.getMessage().delete().queue();
-        List<String> args = ctx.getArgs();
-        EmbedBuilder eBuilder = getEmbedBuilder(args);
-        messageUtils.respondToUser(ctx, eBuilder.build());
+        messageUtils.deleteTrigger(ctx);
+        messageUtils.respondToUser(ctx,
+                getEmbedBuilder(ctx.getArgs())
+                        .build());
     }
 
     @Override
     public void handleSlash(SlashCommandInteractionEvent event, List<String> args) {
         EmbedBuilder eBuilder = getEmbedBuilder(args);
-        event.getHook().sendMessageEmbeds(eBuilder.build()).setEphemeral(true).queue();
+        event.getHook()
+                .sendMessageEmbeds(eBuilder.build())
+                .setEphemeral(true)
+                .queue();
     }
 
     @Override
@@ -79,12 +80,12 @@ public class TogglePrefixCommand implements ICommand {
     @NotNull
     private EmbedBuilder getEmbedBuilder(List<String> args) {
         fireStoreService.getModel().setRespondByPrefix(true);
+
         EmbedBuilder eBuilder = new EmbedBuilder();
         eBuilder.setTitle("Respond by prefix");
         if (!args.isEmpty()) {
-            String prefix = args.get(0);
             eBuilder.setTitle("Prefix changed");
-            fireStoreService.getModel().setPrefix(prefix);
+            fireStoreService.getModel().setPrefix(args.get(0));
         }
         fireStoreService.updateConfigModel();
         eBuilder.setDescription("Bot is now responding by: **prefix**\n" +
