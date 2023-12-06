@@ -24,17 +24,16 @@ public class ToggleBotResponseCommand implements ICommand {
 
     @Override
     public void handle(CommandContext ctx) {
-        boolean deleteTriggerMessage = firestoreService.getModel().isDeleteTriggerMessage();
-        if(deleteTriggerMessage)
-            ctx.getMessage().delete().queue();
-        EmbedBuilder embedBuilder = getEmbedBuilder();
-        messageUtils.respondToUser(ctx, embedBuilder.build());
+        messageUtils.deleteTrigger(ctx);
+        messageUtils.respondToUser(ctx, getEmbedBuilder().build());
     }
 
     @Override
     public void handleSlash(SlashCommandInteractionEvent event, List<String> args) {
-        EmbedBuilder embedBuilder = getEmbedBuilder();
-        event.getHook().sendMessageEmbeds(embedBuilder.build()).setEphemeral(true).queue();
+        event.getHook()
+                .sendMessageEmbeds(getEmbedBuilder().build())
+                .setEphemeral(true)
+                .queue();
     }
 
     @Override
@@ -50,7 +49,7 @@ public class ToggleBotResponseCommand implements ICommand {
         embedBuilder.addField("Usage", "`{prefix or mention} togglebotresponse`", false);
         embedBuilder.addField("Example usage", "`" + firestoreService.getModel().getPrefix() + "togglebotresponse`", false);
         embedBuilder.addField("Available aliases", messageUtils.createAliasString(getAliases()), false);
-        Color color = new Color((int)(Math.random() * 0x1000000));
+        Color color = new Color((int) (Math.random() * 0x1000000));
         embedBuilder.setColor(color);
         return embedBuilder.build();
     }
@@ -79,7 +78,8 @@ public class ToggleBotResponseCommand implements ICommand {
     private EmbedBuilder getEmbedBuilder() {
         EmbedBuilder embedBuilder = new EmbedBuilder();
         boolean respondInDirect = !firestoreService.getModel().isRespondInDirectMessage();
-        firestoreService.getModel().setRespondInDirectMessage(respondInDirect);
+        firestoreService.getModel()
+                .setRespondInDirectMessage(respondInDirect);
         firestoreService.updateConfigModel();
         embedBuilder.setTitle("Hello there!");
         embedBuilder.setDescription("I will now respond back to you by: **" + (respondInDirect ? "direct message" : "message reply") + "**");
