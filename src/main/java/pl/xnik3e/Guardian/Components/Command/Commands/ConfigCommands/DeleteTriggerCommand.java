@@ -27,15 +27,16 @@ public class DeleteTriggerCommand implements ICommand {
         if(!deleteTriggerMessage) {
             ctx.getMessage().delete().queue();
         }
-        EmbedBuilder embedBuilder = getEmbedBuilder(deleteTriggerMessage);
-        messageUtils.respondToUser(ctx, embedBuilder.build());
+        changeTrigger(deleteTriggerMessage);
+        messageUtils.respondToUser(ctx, getEmbedBuilder(deleteTriggerMessage).build());
     }
 
     @Override
     public void handleSlash(SlashCommandInteractionEvent event, List<String> args) {
         boolean deleteTriggerMessage = fireStoreService.getModel().isDeleteTriggerMessage();
-        EmbedBuilder embedBuilder = getEmbedBuilder(deleteTriggerMessage);
-        event.getHook().sendMessageEmbeds(embedBuilder.build()).setEphemeral(true).queue();
+        event.getHook()
+                .sendMessageEmbeds(getEmbedBuilder(deleteTriggerMessage).build())
+                .setEphemeral(true).queue();
     }
 
     @Override
@@ -76,14 +77,16 @@ public class DeleteTriggerCommand implements ICommand {
     }
 
     @NotNull
-    private EmbedBuilder getEmbedBuilder(boolean deleteTriggerMessage) {
-        fireStoreService.getModel().setDeleteTriggerMessage(!deleteTriggerMessage);
-        fireStoreService.updateConfigModel();
-
+    private EmbedBuilder getEmbedBuilder(boolean previousTrigger) {
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setTitle("Hello there!");
-        embedBuilder.setDescription("From now, I " + (!deleteTriggerMessage ? "will " : "won't " ) + "delete trigger messages");
+        embedBuilder.setDescription("From now, I " + (!previousTrigger ? "will " : "won't " ) + "delete trigger messages");
         embedBuilder.setColor(Color.GREEN);
         return embedBuilder;
+    }
+
+    private void changeTrigger(boolean deleteTriggerMessage) {
+        fireStoreService.getModel().setDeleteTriggerMessage(!deleteTriggerMessage);
+        fireStoreService.updateConfigModel();
     }
 }
