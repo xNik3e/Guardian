@@ -1,9 +1,9 @@
 package pl.xnik3e.Guardian.Components.Command.Commands.BobCommands;
 
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import pl.xnik3e.Guardian.Models.ContextModel;
 import pl.xnik3e.Guardian.Models.NickNameModel;
 import pl.xnik3e.Guardian.Services.FireStoreService;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
@@ -28,17 +28,13 @@ public class NickBlackListCommand implements ICommand {
 
     @Override
     public void handle(CommandContext ctx) {
-        boolean deleteTriggerMessage = fireStoreService.getModel().isDeleteTriggerMessage();
-        if (deleteTriggerMessage)
-            ctx.getMessage().delete().queue();
-        Guild guild = ctx.getGuild();
-        List<String> args = ctx.getArgs();
-        blackList(ctx, null, args, guild);
+        messageUtils.deleteTrigger(ctx);
+        blackList(new ContextModel(ctx));
     }
 
     @Override
     public void handleSlash(SlashCommandInteractionEvent event, List<String> args) {
-        blackList(null, event, args, event.getGuild());
+        blackList(new ContextModel(event, args));
     }
 
     @Override
@@ -84,71 +80,46 @@ public class NickBlackListCommand implements ICommand {
         return List.of("bl");
     }
 
-    public void blackList(CommandContext ctx, SlashCommandInteractionEvent event, List<String> args, Guild guild) {
-        EmbedBuilder builder = new EmbedBuilder();
-        if (args.isEmpty()) {
-            builder.setTitle("Error");
-            builder.setDescription("You need to provide user id and nickname index");
-            builder.setColor(Color.RED);
-            messageUtils.respondToUser(ctx, event, builder);
+    public void blackList(ContextModel context) {
+        if (context.args.isEmpty()) {
+            sendErrorMessageNoArguments(context);
             return;
         }
-        if (args.size() != 2) {
-            builder.setTitle("Error");
-            builder.setDescription("Provided " + args.size() + " arguments, but expected 2");
-            builder.addField("User", "User id or mention", false);
-            builder.addField("Nickname index", "Index of nickname to blacklist or **ALL** if you want to delete all whitelisted roles", false);
-            builder.setColor(Color.RED);
-            messageUtils.respondToUser(ctx, event, builder);
+
+        if (context.args.size() != 2) {
+            sendErrorMessageInvalidArgumentsSize(context);
             return;
         }
+
         Matcher matcher = Pattern.compile("\\d+")
-                .matcher(args.get(0));
+                .matcher(context.args.get(0));
         if (!matcher.find()) {
-            builder.setTitle("Error");
-            builder.setDescription("Please provide valid user id");
-            builder.setColor(Color.RED);
-            messageUtils.respondToUser(ctx, event, builder);
+            sendErrorMessageNoValidUserID(context);
             return;
         }
         String userID = matcher.group();
-        String nickNameIndex = args.get(1);
-        if(nickNameIndex.toLowerCase().equals("all")){
-            fireStoreService.deleteNickNameModel(userID);
-            builder.setTitle("Success");
-            builder.setDescription("Deleted all whitelisted nicknames for user with id: " + userID);
-            builder.setColor(Color.GREEN);
-            guild.retrieveMemberById(userID).delay(2, TimeUnit.SECONDS).queue(member -> {
-                if(!messageUtils.hasMentionableNickName(member))
-                    messageUtils.bobify(member);
-            });
-            messageUtils.respondToUser(ctx, event, builder);
+
+        String nickNameIndex = context.args.get(1);
+        if(nickNameIndex.equalsIgnoreCase("all")){
+            revokeWhitelistAndNotifyUser(context, userID);
             return;
         }
+
         matcher = Pattern.compile("\\d+")
                 .matcher(nickNameIndex);
         if (!matcher.find()) {
-            builder.setTitle("Error");
-            builder.setDescription("Please provide valid nickname index or type **ALL**");
-            builder.setColor(Color.RED);
-            messageUtils.respondToUser(ctx, event, builder);
+            sendErrorInvalidIndex(context);
             return;
         }
         int index = Integer.parseInt(matcher.group());
         NickNameModel model = fireStoreService.fetchNickNameModel(userID);
         if(model == null){
-            builder.setTitle("Info");
-            builder.setDescription("User with id: " + userID + " does not have any whitelisted nicknames");
-            builder.setColor(Color.YELLOW);
-            messageUtils.respondToUser(ctx, event, builder);
+            sendInfiMessageEmptyWhitelist(context, userID);
             return;
         }
 
         if(index > model.getNickName().size()){
-            builder.setTitle("Error");
-            builder.setDescription("User with id: " + userID + " does not have nickname with index: " + index);
-            builder.setColor(Color.RED);
-            messageUtils.respondToUser(ctx, event, builder);
+            sendErrorMessageInvalidIndexRange(context, userID, index);
             return;
         }
 
@@ -157,17 +128,85 @@ public class NickBlackListCommand implements ICommand {
             fireStoreService.deleteNickNameModel(userID);
         else
             fireStoreService.updateNickModel(model);
-        guild.retrieveMemberById(userID).delay(2, TimeUnit.SECONDS).queue(member -> {
+
+        context.guild.retrieveMemberById(userID).delay(2, TimeUnit.SECONDS).queue(member -> {
             if(!messageUtils.hasMentionableNickName(member))
                 messageUtils.bobify(member);
 
-            builder.setTitle("Success");
-            builder.setDescription("Deleted nickname with index: " + index + " for user with id: " + userID);
-            builder.setColor(Color.GREEN);
-            messageUtils.respondToUser(ctx, event, builder);
+            sendSuccessMessage(context, index, userID);
         });
     }
 
+    private void sendSuccessMessage(ContextModel context, int index, String userID) {
+        EmbedBuilder builder = new EmbedBuilder();
+        builder.setTitle("Success");
+        builder.setDescription("Deleted nickname with index: " + index + " for user with id: " + userID);
+        builder.setColor(Color.GREEN);
+        messageUtils.respondToUser(context.ctx, context.event, builder);
+    }
+
+    private void sendErrorMessageInvalidIndexRange(ContextModel context, String userID, int index) {
+        EmbedBuilder builder = new EmbedBuilder();
+        builder.setTitle("Error");
+        builder.setDescription("User with id: " + userID + " does not have nickname with index: " + index);
+        builder.setColor(Color.RED);
+        messageUtils.respondToUser(context.ctx, context.event, builder);
+    }
+
+    private void sendInfiMessageEmptyWhitelist(ContextModel context, String userID) {
+        EmbedBuilder builder = new EmbedBuilder();
+        builder.setTitle("Info");
+        builder.setDescription("User with id: " + userID + " does not have any whitelisted nicknames");
+        builder.setColor(Color.YELLOW);
+        messageUtils.respondToUser(context.ctx, context.event, builder);
+    }
+
+    private void sendErrorInvalidIndex(ContextModel context) {
+        EmbedBuilder builder = new EmbedBuilder();
+        builder.setTitle("Error");
+        builder.setDescription("Please provide valid nickname index or type **ALL**");
+        builder.setColor(Color.RED);
+        messageUtils.respondToUser(context.ctx, context.event, builder);
+    }
+
+    private void revokeWhitelistAndNotifyUser(ContextModel context, String userID) {
+        fireStoreService.deleteNickNameModel(userID);
+        EmbedBuilder builder = new EmbedBuilder();
+        builder.setTitle("Success");
+        builder.setDescription("Deleted all whitelisted nicknames for user with id: " + userID);
+        builder.setColor(Color.GREEN);
+        context.guild.retrieveMemberById(userID).delay(2, TimeUnit.SECONDS).queue(member -> {
+            if(!messageUtils.hasMentionableNickName(member))
+                messageUtils.bobify(member);
+        });
+        messageUtils.respondToUser(context.ctx, context.event, builder);
+    }
+
+    private void sendErrorMessageNoValidUserID(ContextModel context) {
+        EmbedBuilder builder = new EmbedBuilder();
+        builder.setTitle("Error");
+        builder.setDescription("Please provide valid user id");
+        builder.setColor(Color.RED);
+        messageUtils.respondToUser(context.ctx, context.event, builder);
+    }
+
+    private void sendErrorMessageInvalidArgumentsSize(ContextModel context) {
+        EmbedBuilder builder = new EmbedBuilder();
+        builder.setTitle("Error");
+        builder.setDescription("Provided " + context.args.size() + " arguments, but expected 2");
+        builder.addField("User", "User id or mention", false);
+        builder.addField("Nickname index", "Index of nickname to blacklist or **ALL** if you want to delete all whitelisted roles", false);
+        builder.setColor(Color.RED);
+        messageUtils.respondToUser(context.ctx, context.event, builder);
+    }
+
+    private void sendErrorMessageNoArguments(ContextModel context) {
+        EmbedBuilder builder = new EmbedBuilder();
+        builder.setTitle("Error");
+        builder.setDescription("You need to provide user id and nickname index");
+        builder.setColor(Color.RED);
+        messageUtils.respondToUser(context.ctx, context.event, builder);
+    }
 
 
 }
