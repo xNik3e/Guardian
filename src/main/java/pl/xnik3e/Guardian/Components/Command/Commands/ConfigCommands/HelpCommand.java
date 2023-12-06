@@ -24,9 +24,7 @@ public class HelpCommand implements ICommand {
 
     @Override
     public void handle(CommandContext ctx) {
-        boolean deleteTriggerMessage = messageUtils.getFireStoreService().getModel().isDeleteTriggerMessage();
-        if(deleteTriggerMessage)
-            ctx.getMessage().delete().queue();
+        messageUtils.deleteTrigger(ctx);
         List<String> args = ctx.getArgs();
         if (args.isEmpty()) {
             EmbedBuilder builder = getCommandsEmbedBuilder();
@@ -105,18 +103,13 @@ public class HelpCommand implements ICommand {
         Color color = new Color((int) (Math.random() * 0x1000000));
         builder.setColor(color);
 
-        commandManager.getCommands().stream()
+        commandManager.getCommands()
                 .forEach((it) -> {
-                    StringBuilder aliases = new StringBuilder();
-                    it.getAliases()
-                            .stream()
-                            .map((alias) -> "`" + alias + "`")
-                            .forEachOrdered(
-                                    alias -> aliases.append(alias).append(" ")
-                            );
                     builder.addField(it.getName(),
                             "*" +it.getDescription() + "*\n"
-                                    + "Aliases: " + aliases.toString(), false);
+                                    + "Aliases: " +
+                                    messageUtils.createAliasString(it.getAliases()),
+                            false);
                 });
         return builder;
     }
