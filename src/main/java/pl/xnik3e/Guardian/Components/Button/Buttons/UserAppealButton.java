@@ -13,6 +13,7 @@ import pl.xnik3e.Guardian.Utils.MessageUtils;
 import pl.xnik3e.Guardian.Components.Button.IButton;
 
 import java.awt.*;
+import java.util.Objects;
 
 public class UserAppealButton implements IButton {
 
@@ -29,30 +30,42 @@ public class UserAppealButton implements IButton {
         event.deferEdit().queue();
         Message message = event.getMessage();
         String previousNick = message.getEmbeds().get(0).getFields().get(0).getValue();
-        User user = event.getUser();
+        editOriginalMessage(event, previousNick);
+
+        MessageChannel logChannel = Objects.requireNonNull(event.getJDA().getGuildById(fireStoreService.getEnvironmentModel().getGUILD_ID()))
+                .getChannelById(MessageChannel.class, fireStoreService.getModel().getChannelIdToSendDeletedMessages());
+        if (logChannel != null) {
+            sendMessageToMods(event, logChannel);
+        }
+    }
+
+    private static void sendMessageToMods(ButtonInteractionEvent event, MessageChannel logChannel) {
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setTitle("Odwołanie automatycznej zmiany nicku");
+        embedBuilder.addField("User", event.getUser().getAsMention(), false);
+        embedBuilder.setDescription("Przeprowadzono automatyczną edycję nicku i użytkownik się odwołał\n" +
+                "Wybierz opcję poniżej");
+        embedBuilder.setColor(Color.BLUE);
+        Button buttonAccept = Button.primary("acceptAppeal", "Akceptuj");
+        Button buttonReject = Button.danger("rejectAppeal", "Odrzuć");
+        MessageCreateData data = new MessageCreateBuilder()
+                .setEmbeds(embedBuilder.build())
+                .setActionRow(buttonAccept, buttonReject)
+                .build();
+        logChannel.sendMessage(data).queue();
+    }
+
+    private static void editOriginalMessage(ButtonInteractionEvent event, String previousNick) {
         event.getHook().editOriginalComponents().queue();
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setTitle("Odwołanie");
         embedBuilder.addField("Nick", previousNick, false);
-        embedBuilder.addField("UserID", user.getId(), false);
+        embedBuilder.addField("UserID", event.getUser().getId(), false);
         embedBuilder.setDescription("Twoje odwołanie zostało wysłane do administracji. Odpowiedź otrzymasz w wiadomości prywatnej.\n" +
                 "Jeżeli odwołanie zostanie przyjęte przywrócimy Twój nick.\n" +
                 "Za utrudnienia przepraszamy.");
         embedBuilder.setColor(Color.PINK);
         event.getHook().editOriginalEmbeds(embedBuilder.build()).queue();
-        MessageChannel logChannel = event.getJDA().getGuildById(fireStoreService.getEnvironmentModel().getGUILD_ID())
-                .getChannelById(MessageChannel.class, fireStoreService.getModel().getChannelIdToSendDeletedMessages());
-        if (logChannel != null) {
-            embedBuilder.setTitle("Odwołanie automatycznej zmiany nicku");
-            embedBuilder.addField("User", user.getAsMention(), false);
-            embedBuilder.setDescription("Przeprowadzono automatyczną edycję nicku i użytkownik się odwołał\n" +
-                    "Wybierz opcję poniżej");
-            embedBuilder.setColor(Color.BLUE);
-            net.dv8tion.jda.api.interactions.components.buttons.Button buttonAccept = net.dv8tion.jda.api.interactions.components.buttons.Button.primary("acceptAppeal", "Akceptuj");
-            net.dv8tion.jda.api.interactions.components.buttons.Button buttonReject = Button.danger("rejectAppeal", "Odrzuć");
-            MessageCreateData data = new MessageCreateBuilder().setEmbeds(embedBuilder.build()).setActionRow(buttonAccept, buttonReject).build();
-            logChannel.sendMessage(data).queue();
-        }
     }
 
     @Override
