@@ -14,7 +14,7 @@ public class ContextModel {
     public Guild guild;
     public Channel channel;
     public List<String> args;
-    ContextModel.From from;
+    public ContextModel.From from;
     public CommandContext ctx;
     public SlashCommandInteractionEvent event;
 
@@ -34,7 +34,7 @@ public class ContextModel {
         this.event = event;
     }
 
-    protected enum From {
+    public enum From {
         EVENT,
         CONTEXT
     }

@@ -2,7 +2,6 @@ package pl.xnik3e.Guardian.Components.Command.Commands.BobCommands;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
@@ -11,6 +10,7 @@ import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEve
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageEditBuilder;
+import pl.xnik3e.Guardian.Models.ContextModel;
 import pl.xnik3e.Guardian.Models.ToBobifyMembersModel;
 import pl.xnik3e.Guardian.Services.FireStoreService;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
@@ -31,6 +31,11 @@ public class GetBobCommand implements ICommand {
     private final FireStoreService fireStoreService;
     private final MessageUtils messageUtils;
 
+    private ToBobifyMembersModel model;
+    private List<Map<String, String>> maps;
+    private MessageCreateBuilder messageCreateBuilder;
+    private EmbedBuilder defaultResponseEmbedBuilder;
+
     public GetBobCommand(MessageUtils messageUtils) {
         this.messageUtils = messageUtils;
         this.fireStoreService = messageUtils.getFireStoreService();
@@ -39,17 +44,13 @@ public class GetBobCommand implements ICommand {
 
     @Override
     public void handle(CommandContext ctx) {
-        boolean deleteTriggerMessage = fireStoreService.getModel().isDeleteTriggerMessage();
-        if (deleteTriggerMessage)
-            ctx.getMessage().delete().queue();
-        Guild guild = ctx.getGuild();
-        List<String> args = ctx.getArgs();
-        getBob(ctx, null, args, guild);
+        messageUtils.deleteTrigger(ctx);
+        getBob(new ContextModel(ctx));
     }
 
     @Override
     public void handleSlash(SlashCommandInteractionEvent event, List<String> args) {
-        getBob(null, event, args, event.getGuild());
+        getBob(new ContextModel(event, args));
     }
 
     @Override
@@ -90,86 +91,132 @@ public class GetBobCommand implements ICommand {
         return List.of("gb", "fetchbob", "fb");
     }
 
-    private void getBob(CommandContext ctx, SlashCommandInteractionEvent event, List<String> args, Guild guild) {
-        EmbedBuilder embedBuilder = new EmbedBuilder();
-        EmbedBuilder defaultEmbedBuilder = getDefaultEmbedBuilder();
+    private void getBob(ContextModel context) {
         try {
-            Message oryginalMessage = messageUtils.respondToUser(ctx, event, defaultEmbedBuilder).get(5, TimeUnit.SECONDS);
-            if (!args.isEmpty()) {
-                embedBuilder.setTitle("Error");
-                embedBuilder.setDescription("This command doesn't take any arguments");
-                embedBuilder.setColor(Color.RED);
-                messageUtils.respondToUser(ctx, event, embedBuilder);
+            EmbedBuilder defaultEmbedBuilder = getDefaultEmbedBuilder();
+            if (!context.args.isEmpty()) {
+                sendErrorMessageTooMuchArguments(context);
                 return;
             }
-            guild.findMembers(member -> !messageUtils.hasMentionableNickName(member))
+            Message oryginalMessage = messageUtils.respondToUser(context.ctx, context.event, defaultEmbedBuilder)
+                    .get(5, TimeUnit.SECONDS);
+
+            context.guild.findMembers(member -> !messageUtils.hasMentionableNickName(member))
                     .onSuccess(members -> {
-                        MessageCreateBuilder messageCreateBuilder = new MessageCreateBuilder();
-                        ToBobifyMembersModel deletedModel = fireStoreService.deleteCacheUntilNow(ToBobifyMembersModel.class);
-                        if(deletedModel != null){
-                            JDA jda = event != null ? event.getJDA() : ctx.getJDA();
-                            messageUtils.deleteMessage(jda, deletedModel);
-                        }
-                        List<Map<String, String>> maps = new ArrayList<>();
-                        List<Map<String, String>> temp = new ArrayList<>();
-                        AtomicInteger ordinal = new AtomicInteger();
-
-                        ToBobifyMembersModel model = new ToBobifyMembersModel();
-                        model.setTimestamp(System.currentTimeMillis() + 1000 * 60 * 5);
-                        String time = new SimpleDateFormat("HH:mm:ss").format(new Date(model.getTimestamp()));
-
-                        members.forEach(member -> {
-                            mapMember(member, ordinal, maps);
-                        });
-                        model.setMaps(maps);
-                        model.setAllEntries(maps.size());
-                        model.setMessageID(oryginalMessage.getId());
-                        model.setChannelId(oryginalMessage.getChannelId());
-                        model.setUserID(event != null ? event.getUser().getId() : ctx.getAuthor().getId());
-                        model.setPrivateChannel(oryginalMessage.getChannelType() == ChannelType.PRIVATE);
-
-                        embedBuilder.setTitle("Bob list");
-                        embedBuilder.setDescription("List of users which username are marked as not being mentionable");
-                        embedBuilder.appendDescription("\nTo Bobify specific user use `" + fireStoreService.getModel().getPrefix() + "bobify <userID>` command");
-                        embedBuilder.setColor(Color.GREEN);
-
-                        if(model.getAllEntries() != 0){
-                            fireStoreService.setCacheModel(model);
-                            embedBuilder.appendDescription("\n\n**CACHED DATA WILL BE ISSUED FOR DELETION AFTER: **" + time + "\n*ANY REQUESTS AFTER THAT TIME CAN RESULT IN FAILURE*\n");
-                        }
-
-                        int additionalPages = model.getAllEntries() % MAX_USERS == 0 ?
-                                0 : MAX_USERS == 1 ?
-                                0 : 1;
-
-                        if(model.getAllEntries() >= MAX_USERS){
-                            temp.addAll(maps.subList(0, MAX_USERS));
-                            embedBuilder.setFooter("Showing page {**1/" + ((model.getAllEntries() / MAX_USERS) + additionalPages) + "**} for [GetBob]");
-                            messageCreateBuilder.setActionRow(Button.primary("nextPage", "Next page"));
-                        }else{
-                            temp.addAll(maps);
-                        }
-                        if (!members.isEmpty()) {
-                            Button button = Button.danger("bobifyall", "Bobify all");
-                            messageCreateBuilder.addActionRow(button);
-                        }
-
-                        temp.forEach(fetchedMap -> {
-                            embedBuilder.addField(fetchedMap.get("effectiveName"), fetchedMap.get("mention") + "\n[" + fetchedMap.get("userID")+"]", true);
-                        });
-
-                        messageCreateBuilder.addEmbeds(embedBuilder.build());
-                        MessageEditBuilder messageEditBuilder = new MessageEditBuilder().applyCreateData(messageCreateBuilder.build());
-                        oryginalMessage.editMessage(messageEditBuilder.build()).queue();
+                        deleteCachedModelAndMessage(context);
+                        buildResponse(context, members, oryginalMessage);
                     }).onError(error -> {
-                        embedBuilder.setTitle("Error");
-                        embedBuilder.setDescription("Something went wrong");
-                        embedBuilder.setColor(Color.RED);
-                        oryginalMessage.editMessageEmbeds(embedBuilder.build()).queue();
+                        setError(oryginalMessage);
                     });
         } catch (Exception e) {
             System.err.println("Error while sending message to user");
         }
+    }
+
+    private void buildResponse(ContextModel context, List<Member> members, Message oryginalMessage) {
+        messageCreateBuilder = new MessageCreateBuilder();
+        updateMaps(members);
+        createToBobifyModel(context, oryginalMessage);
+
+        createDefaultEmbedBuilder();
+        addCacheWarning();
+        populateEmbedFields();
+        addFooterIfRequired();
+        addBibifyButtonIfRequired(members);
+
+        editOriginalMessage(oryginalMessage);
+    }
+
+    private void editOriginalMessage(Message oryginalMessage) {
+        messageCreateBuilder.addEmbeds(defaultResponseEmbedBuilder.build());
+        MessageEditBuilder messageEditBuilder = new MessageEditBuilder().applyCreateData(messageCreateBuilder.build());
+        oryginalMessage.editMessage(messageEditBuilder.build()).queue();
+    }
+
+    private void populateEmbedFields() {
+        List<Map<String, String>> temp = new ArrayList<>(model.getAllEntries() >= MAX_USERS ? maps.subList(0, MAX_USERS) : maps);
+        temp.forEach(fetchedMap -> {
+            defaultResponseEmbedBuilder.addField(fetchedMap.get("effectiveName"), fetchedMap.get("mention") + "\n[" + fetchedMap.get("userID")+"]", true);
+        });
+    }
+
+    private void addBibifyButtonIfRequired(List<Member> members) {
+        if (!members.isEmpty()) {
+            Button button = Button.danger("bobifyall", "Bobify all");
+            messageCreateBuilder.addActionRow(button);
+        }
+    }
+
+    private void addFooterIfRequired() {
+        int additionalPages = model.getAllEntries() % MAX_USERS == 0 ?
+                0 : MAX_USERS == 1 ?
+                0 : 1;
+
+        if(model.getAllEntries() >= MAX_USERS){
+            defaultResponseEmbedBuilder.setFooter("Showing page {**1/" + ((model.getAllEntries() / MAX_USERS) + additionalPages) + "**} for [GetBob]");
+            messageCreateBuilder.setActionRow(Button.primary("nextPage", "Next page"));
+        }
+
+    }
+
+    private void updateMaps(List<Member> members) {
+        this.maps = new ArrayList<>();
+        AtomicInteger ordinal = new AtomicInteger();
+
+        members.forEach(member -> {
+            mapMember(member, ordinal, maps);
+        });
+    }
+
+    private void addCacheWarning() {
+        String time = new SimpleDateFormat("HH:mm:ss").format(new Date(model.getTimestamp()));
+        if(model.getAllEntries() != 0){
+            fireStoreService.setCacheModel(model);
+            defaultResponseEmbedBuilder.appendDescription("\n\n**CACHED DATA WILL BE ISSUED FOR DELETION AFTER: **"+ time+ "\n*ANY REQUESTS AFTER THAT TIME CAN RESULT IN FAILURE*\n");
+        }
+    }
+
+    private void createDefaultEmbedBuilder() {
+        defaultResponseEmbedBuilder = new EmbedBuilder();
+        defaultResponseEmbedBuilder.setTitle("Bob list");
+        defaultResponseEmbedBuilder.setDescription("List of users which username are marked as not being mentionable");
+        defaultResponseEmbedBuilder.appendDescription("\nTo Bobify specific user use `" + fireStoreService.getModel().getPrefix() + "bobify <userID>` command");
+        defaultResponseEmbedBuilder.setColor(Color.GREEN);
+    }
+
+    private static void setError(Message oryginalMessage) {
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setTitle("Error");
+        embedBuilder.setDescription("Something went wrong");
+        embedBuilder.setColor(Color.RED);
+        oryginalMessage.editMessageEmbeds(embedBuilder.build()).queue();
+    }
+
+    private void createToBobifyModel(ContextModel context, Message oryginalMessage) {
+        model = new ToBobifyMembersModel();
+        model.setTimestamp(System.currentTimeMillis() + 1000 * 60 * 5);
+        model.setMaps(maps);
+        model.setAllEntries(maps.size());
+        model.setMessageID(oryginalMessage.getId());
+        model.setChannelId(oryginalMessage.getChannelId());
+        model.setUserID(context.from == ContextModel.From.EVENT ?  context.event.getUser().getId() :  context.ctx.getAuthor().getId());
+        model.setPrivateChannel(oryginalMessage.getChannelType() == ChannelType.PRIVATE);
+    }
+
+    private void deleteCachedModelAndMessage(ContextModel context) {
+        ToBobifyMembersModel deletedModel = fireStoreService.deleteCacheUntilNow(ToBobifyMembersModel.class);
+        if(deletedModel != null){
+            JDA jda = context.from == ContextModel.From.EVENT ? context.event.getJDA() :  context.ctx.getJDA();
+            messageUtils.deleteMessage(jda, deletedModel);
+        }
+    }
+
+    private void sendErrorMessageTooMuchArguments(ContextModel context) {
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setTitle("Error");
+        embedBuilder.setDescription("This command doesn't take any arguments");
+        embedBuilder.setColor(Color.RED);
+        messageUtils.respondToUser(context.ctx, context.event, embedBuilder);
     }
 
     private static EmbedBuilder getDefaultEmbedBuilder() {
