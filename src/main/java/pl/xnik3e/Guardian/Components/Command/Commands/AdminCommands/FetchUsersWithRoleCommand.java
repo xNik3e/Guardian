@@ -6,15 +6,13 @@ import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
-import net.dv8tion.jda.api.utils.concurrent.Task;
 import net.dv8tion.jda.api.utils.messages.MessageEditBuilder;
+import pl.xnik3e.Guardian.Models.ContextModel;
 import pl.xnik3e.Guardian.Models.FetchedRoleModel;
 import pl.xnik3e.Guardian.Services.FireStoreService;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
 import pl.xnik3e.Guardian.Components.Command.CommandContext;
 import pl.xnik3e.Guardian.Components.Command.ICommand;
-
-import javax.annotation.Nullable;
 
 import java.awt.*;
 import java.text.SimpleDateFormat;
@@ -30,6 +28,11 @@ public class FetchUsersWithRoleCommand implements ICommand {
     private final MessageUtils messageUtils;
     private final FireStoreService fireStoreService;
 
+    private List<Map<String, String>> maps;
+    private FetchedRoleModel model;
+    private MessageEditBuilder editBuilder;
+    private EmbedBuilder defaultResponseEmbedBuilder;
+
     public FetchUsersWithRoleCommand(MessageUtils messageUtils) {
         this.messageUtils = messageUtils;
         this.fireStoreService = messageUtils.getFireStoreService();
@@ -38,15 +41,13 @@ public class FetchUsersWithRoleCommand implements ICommand {
 
     @Override
     public void handle(CommandContext ctx) {
-        boolean deleteTriggerMessage = messageUtils.getFireStoreService().getModel().isDeleteTriggerMessage();
-        if (deleteTriggerMessage)
-            ctx.getMessage().delete().queue();
-        fetchUsers(ctx, null, ctx.getArgs(), ctx.getGuild());
+        messageUtils.deleteTrigger(ctx);
+        fetchUsers(new ContextModel(ctx));
     }
 
     @Override
     public void handleSlash(SlashCommandInteractionEvent event, List<String> args) {
-        fetchUsers(null, event, args, event.getGuild());
+        fetchUsers(new ContextModel(event, args));
     }
 
     @Override
@@ -83,96 +84,150 @@ public class FetchUsersWithRoleCommand implements ICommand {
         return List.of("fetchusers", "getusers", "findbyrole", "fetch");
     }
 
-    private void fetchUsers(@Nullable CommandContext ctx, @Nullable SlashCommandInteractionEvent event, List<String> args, Guild guild) {
-        EmbedBuilder eBuilder = new EmbedBuilder();
-        if (args.size() == 1) {
+    private void fetchUsers(ContextModel context) {
+        if (context.args.size() == 1) {
             //regular expression to check whether role was mentioned or not
             Matcher matcher = Pattern.compile("\\d+")
-                    .matcher(args.get(0));
+                    .matcher(context.args.get(0));
 
-            eBuilder.setTitle("An error has occurred");
             if (!matcher.find()) {
-                eBuilder.setDescription("Please provide valid role id or mention");
-                eBuilder.setColor(Color.RED);
-                messageUtils.respondToUser(ctx, event, eBuilder);
+                sendErrorMessageNoValidID(context);
                 return;
             }
             String roleId = matcher.group(0);
-            Role role = guild.getRoleById(roleId);
+            Role role = context.guild.getRoleById(roleId);
             if (role == null) {
-                eBuilder.setDescription("Please provide valid role id or mention");
-                eBuilder.setColor(Color.RED);
-                messageUtils.respondToUser(ctx, event, eBuilder);
+                sendErrorMessageNoValidID(context);
                 return;
             }
-            Task<List<Member>> task = guild.findMembersWithRoles(role);
-            task.onSuccess(members -> {
-                FetchedRoleModel deletedModel = fireStoreService.deleteCacheUntilNow(FetchedRoleModel.class);
-                if(deletedModel != null){
-                    JDA jda = event != null ? event.getJDA() : ctx.getJDA();
-                    messageUtils.deleteMessage(jda, deletedModel);
-                }
-                List<Map<String, String>> maps = new ArrayList<>();
-                AtomicInteger ordinal = new AtomicInteger();
 
-                FetchedRoleModel model = new FetchedRoleModel();
-                model.setRoleName(role.getName());
-                model.setRoleID(role.getId());
-                model.setTimestamp(System.currentTimeMillis() + 1000 * 60 * 5);
-
-                eBuilder.setTitle("Fetching role *" + role.getName() + "* users");
-                eBuilder.setDescription("Please wait, this may take a while");
-                eBuilder.setColor(Color.YELLOW);
-
-                members.forEach(member -> {
-                    mapMember(member, ordinal, maps);
-                });
-
-                model.setMaps(maps);
-                messageUtils.respondToUser(ctx, event, eBuilder)
-                        .thenAccept(message -> {
-                            MessageEditBuilder editBuilder = new MessageEditBuilder();
-                            List<Map<String, String>> temp = new ArrayList<>();
-                            model.setMessageID(message.getId());
-                            model.setUserID(event != null ? event.getUser().getId() : ctx.getAuthor().getId());
-                            model.setChannelId(message.getChannelId());
-                            model.setPrivateChannel(message.getChannelType() == ChannelType.PRIVATE);
-                            model.setAllEntries(model.getMaps().size());
-
-                            String time = new SimpleDateFormat("HH:mm:ss").format(new Date(model.getTimestamp()));
-                            eBuilder.setTitle("Fetched role *" + role.getName() + "* users");
-                            eBuilder.setDescription("I've found **" + model.getAllEntries() + "** users with role **" + role.getName() + "**");
-                            eBuilder.setColor(Color.GREEN);
-
-                            if(model.getAllEntries() != 0){
-                                fireStoreService.setCacheModel(model);
-                                eBuilder.appendDescription("\n\n**CACHED DATA WILL BE ISSUED FOR DELETION AFTER: **" + time + "\n*ANY REQUESTS AFTER THAT TIME CAN RESULT IN FAILURE*\n");
-                            }
-
-                            int additionalPages = model.getAllEntries() % MAX_USERS == 0 ?
-                                    0 : MAX_USERS == 1 ?
-                                    0 : 1;
-
-                            if (model.getAllEntries() >= MAX_USERS) {
-                                temp.addAll(model.getMaps().subList(0, MAX_USERS));
-                                eBuilder.setFooter("Showing page {**1/" + ((model.getAllEntries() / MAX_USERS) + additionalPages) + "**} for [Fetch]");
-                                editBuilder.setActionRow(Button.primary("nextPage", "Next page"));
-                            } else {
-                                temp.addAll(model.getMaps());
-                            }
-
-                            temp.forEach(fetchedMap -> {
-                                eBuilder.addField(fetchedMap.get("userID"), fetchedMap.get("value"), true);
-                            });
-                            editBuilder.setEmbeds(eBuilder.build());
-                            messageUtils.editOryginalMessage(message, event, editBuilder.build());
-                        });
-            });
+            context.guild.findMembersWithRoles(role)
+                    .onSuccess(members -> {
+                        deleteCachedModelAndMessage(context);
+                        buildFetchingResponse(context, members, role);
+                    });
         } else {
-            eBuilder.setDescription("You should only provide single role Id or role mention");
-            eBuilder.setColor(Color.RED);
-            messageUtils.respondToUser(ctx, event, eBuilder);
+            sendErrorMessageToManyArguments(context);
         }
+    }
+
+    private void buildFetchingResponse(ContextModel context, List<Member> members, Role role) {
+        updateMaps(members);
+        createFetchedRoleModel(role);
+
+        EmbedBuilder eBuilder = new EmbedBuilder();
+        eBuilder.setTitle("Fetching role *" + role.getName() + "* users");
+        eBuilder.setDescription("Please wait, this may take a while");
+        eBuilder.setColor(Color.YELLOW);
+
+
+        messageUtils.respondToUser(context.ctx, context.event, eBuilder)
+                .thenAccept(message -> {
+                    updateFetchMessage(context, role, message);
+                });
+    }
+
+    private void updateFetchMessage(ContextModel context, Role role, Message message) {
+        editBuilder = new MessageEditBuilder();
+        updateModel(context, message);
+
+        createDefaultEmbedBuilder(role);
+        addCacheWarning();
+        populateEmbedFields();
+        addFooterIfRequired();
+
+        editOriginalMessage(context, message);
+    }
+
+    private void editOriginalMessage(ContextModel context, Message message) {
+        editBuilder.setEmbeds(defaultResponseEmbedBuilder.build());
+        messageUtils.editOryginalMessage(message, context.event, editBuilder.build());
+    }
+
+    private void populateEmbedFields() {
+        List<Map<String, String>> temp = new ArrayList<>(model.getAllEntries() >= MAX_USERS ?
+                model.getMaps().subList(0, MAX_USERS) :
+                model.getMaps());
+
+        temp.forEach(fetchedMap -> {
+            defaultResponseEmbedBuilder.addField(fetchedMap.get("userID"), fetchedMap.get("value"), true);
+        });
+    }
+
+    private void addFooterIfRequired() {
+        int additionalPages = model.getAllEntries() % MAX_USERS == 0 ?
+                0 : MAX_USERS == 1 ?
+                0 : 1;
+
+        if (model.getAllEntries() >= MAX_USERS) {
+            defaultResponseEmbedBuilder.setFooter("Showing page {**1/" + ((model.getAllEntries() / MAX_USERS) + additionalPages) + "**} for [Fetch]");
+            editBuilder.setActionRow(Button.primary("nextPage", "Next page"));
+        }
+    }
+
+    private void addCacheWarning() {
+        String time = new SimpleDateFormat("HH:mm:ss").format(new Date(model.getTimestamp()));
+
+        if (model.getAllEntries() != 0) {
+            fireStoreService.setCacheModel(model);
+            defaultResponseEmbedBuilder.appendDescription("\n\n**CACHED DATA WILL BE ISSUED FOR DELETION AFTER: **" + time + "\n*ANY REQUESTS AFTER THAT TIME CAN RESULT IN FAILURE*\n");
+        }
+    }
+
+    private void createDefaultEmbedBuilder(Role role) {
+        defaultResponseEmbedBuilder = new EmbedBuilder();
+        defaultResponseEmbedBuilder.setTitle("Fetched role *" + role.getName() + "* users");
+        defaultResponseEmbedBuilder.setDescription("I've found **" + model.getAllEntries() + "** users with role **" + role.getName() + "**");
+        defaultResponseEmbedBuilder.setColor(Color.GREEN);
+    }
+
+    private void updateModel(ContextModel context, Message message) {
+        model.setMessageID(message.getId());
+        model.setUserID(context.from == ContextModel.From.EVENT ? context.event.getUser().getId() : context.ctx.getAuthor().getId());
+        model.setChannelId(message.getChannelId());
+        model.setPrivateChannel(message.getChannelType() == ChannelType.PRIVATE);
+        model.setAllEntries(model.getMaps().size());
+    }
+
+    private void createFetchedRoleModel(Role role) {
+        model = new FetchedRoleModel();
+        model.setRoleName(role.getName());
+        model.setRoleID(role.getId());
+        model.setTimestamp(System.currentTimeMillis() + 1000 * 60 * 5);
+        model.setMaps(maps);
+    }
+
+    private void updateMaps(List<Member> members) {
+        maps = new ArrayList<>();
+        AtomicInteger ordinal = new AtomicInteger();
+        members.forEach(member -> {
+            mapMember(member, ordinal, maps);
+        });
+    }
+
+    private void sendErrorMessageToManyArguments(ContextModel context) {
+        EmbedBuilder eBuilder = new EmbedBuilder();
+        eBuilder.setTitle("An error has occurred");
+        eBuilder.setDescription("You should only provide single role Id or role mention");
+        eBuilder.setColor(Color.RED);
+        messageUtils.respondToUser(context.ctx, context.event, eBuilder);
+    }
+
+    private void deleteCachedModelAndMessage(ContextModel context) {
+        FetchedRoleModel deletedModel = fireStoreService.deleteCacheUntilNow(FetchedRoleModel.class);
+        if (deletedModel != null) {
+            JDA jda = context.event != null ? context.event.getJDA() : context.ctx.getJDA();
+            messageUtils.deleteMessage(jda, deletedModel);
+        }
+    }
+
+
+    private void sendErrorMessageNoValidID(ContextModel context) {
+        EmbedBuilder eBuilder = new EmbedBuilder();
+        eBuilder.setTitle("An error has occurred");
+        eBuilder.setDescription("Please provide valid role id or mention");
+        eBuilder.setColor(Color.RED);
+        messageUtils.respondToUser(context.ctx, context.event, eBuilder);
     }
 
     private void mapMember(Member member, AtomicInteger ordinal, List<Map<String, String>> maps) {
