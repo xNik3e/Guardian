@@ -24,17 +24,16 @@ public class ToggleMentionCommand implements ICommand {
 
     @Override
     public void handle(CommandContext ctx) {
-        boolean deleteTriggerMessage = fireStoreService.getModel().isDeleteTriggerMessage();
-        if(deleteTriggerMessage)
-            ctx.getMessage().delete().queue();
-        EmbedBuilder eBuilder = getEmbedBuilder();
-        messageUtils.respondToUser(ctx, eBuilder.build());
+        messageUtils.deleteTrigger(ctx);
+        messageUtils.respondToUser(ctx, getEmbedBuilder().build());
     }
 
     @Override
     public void handleSlash(SlashCommandInteractionEvent event, List<String> args) {
-        EmbedBuilder eBuilder = getEmbedBuilder();
-        event.getHook().sendMessageEmbeds(eBuilder.build()).setEphemeral(true).queue();
+        event.getHook()
+                .sendMessageEmbeds(getEmbedBuilder().build())
+                .setEphemeral(true)
+                .queue();
     }
 
     @Override
