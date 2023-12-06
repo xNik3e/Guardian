@@ -14,6 +14,8 @@ import pl.xnik3e.Guardian.Services.FireStoreService;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
 
 import java.util.List;
+import java.util.Objects;
+
 @Component
 public class ScheduledTask {
 
@@ -29,40 +31,28 @@ public class ScheduledTask {
         this.jda = bot.getJda();
     }
 
-
-    //schedule every 10 second
-    //@Scheduled(fixedRate = 10 * 1000)
-    //schedule every day at 22:46
-    //@Scheduled(cron = "0 46 22 * * *")
-   /* public void notifyAllUsers(){
-        Guild guild = jda.getGuildById(1112886826559078470L);
-        for(String id : userIds){
-            User member = guild.getMemberById(id).getUser();
-            if(member != null){
-                messageUtils.openPrivateChannelAndMessageUser(member,
-                        "Witaj, zostałeś zbanowany na serwerze " + guild.getName() + " przez bota Guardian. Jeśli chcesz się odwołać, napisz do administracji serwera.");
-            }
-        }
-    }*/
-
-    //scheduled every 1 minute
     @Scheduled(fixedRate = 60 * 1000)
-    public void unbanUsers(){
+    public void unbanUsers() {
         Guild guild = jda.getGuildById(fireStoreService.getEnvironmentModel().getGUILD_ID());
         new Thread(() -> {
-            List<TempBanModel> tempBanModels = fireStoreService.queryBans();
-            tempBanModels.forEach(model -> {
-                guild.unban(UserSnowflake.fromId(model.getUserId())).queue();
-                fireStoreService.deleteBanModel(model.getMessageId());
-                MessageChannel logChannel = guild.getChannelById(MessageChannel.class, fireStoreService.getModel().getChannelIdToSendDeletedMessages());
-                Message message = logChannel.retrieveMessageById(model.getMessageId()).complete();
-                message.delete().queue();
-            });
+            fireStoreService.queryBans()
+                    .forEach(model -> {
+                        try {
+                            guild.unban(UserSnowflake.fromId(model.getUserId())).queue();
+                            fireStoreService.deleteBanModel(model.getMessageId());
+                            Objects.requireNonNull(guild.getChannelById(MessageChannel.class,
+                                            fireStoreService.getModel().getChannelIdToSendDeletedMessages()))
+                                    .retrieveMessageById(model.getMessageId())
+                                    .complete()
+                                    .delete()
+                                    .queue();
+                        } catch (Exception e) {
+                            System.out.println("Message was not found");
+                        }
+                    });
         }).start();
         new Thread(() -> fireStoreService.autoDeleteCache(jda, messageUtils)).start();
     }
-
-
 
 
 }
