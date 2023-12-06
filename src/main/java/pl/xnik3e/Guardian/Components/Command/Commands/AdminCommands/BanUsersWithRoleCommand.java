@@ -4,6 +4,7 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.utils.concurrent.Task;
+import pl.xnik3e.Guardian.Models.ContextModel;
 import pl.xnik3e.Guardian.Services.FireStoreService;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
 import pl.xnik3e.Guardian.Components.Command.CommandContext;
@@ -28,18 +29,14 @@ public class BanUsersWithRoleCommand implements ICommand {
 
     @Override
     public void handle(CommandContext ctx) {
-        boolean deleteTriggerMessage = fireStoreService.getModel().isDeleteTriggerMessage();
-        if (deleteTriggerMessage)
-            ctx.getMessage().delete().queue();
-        Guild guild = ctx.getGuild();
-        List<String> args = ctx.getArgs();
-        purgeUsers(ctx, null, args, guild);
+        messageUtils.deleteTrigger(ctx);
+        purgeUsers(new ContextModel(ctx));
 
     }
 
     @Override
     public void handleSlash(SlashCommandInteractionEvent event, List<String> args) {
-        purgeUsers(null, event, args, event.getGuild());
+        purgeUsers(new ContextModel(event, args));
     }
 
     @Override
@@ -86,69 +83,78 @@ public class BanUsersWithRoleCommand implements ICommand {
         return List.of("banusers", "banbyrole", "purge", "banall", "banrole");
     }
 
-    private void purgeUsers(CommandContext ctx, SlashCommandInteractionEvent event, List<String> args, Guild guild) {
-        EmbedBuilder eBuilder = new EmbedBuilder();
-        if (!args.isEmpty()) {
+    private void purgeUsers(ContextModel context) {
+        if (!context.args.isEmpty()) {
             //regular expression to check whether role was mentioned or not
             Matcher matcher = Pattern.compile("\\d+")
-                    .matcher(args.get(0));
-            eBuilder.setTitle("An error occurred");
-            eBuilder.setDescription("Please provide valid role id or mention");
-            eBuilder.setColor(Color.RED);
+                    .matcher(context.args.get(0));
 
             if (!matcher.find()) {
-                messageUtils.respondToUser(ctx, event, eBuilder);
+                sendErrorMessageInvalidRole(context);
                 return;
             }
+
             String roleId = matcher.group(0);
-            Role role = guild.getRoleById(roleId);
+            Role role = context.guild.getRoleById(roleId);
             if (role == null || role.isPublicRole()) {
-                messageUtils.respondToUser(ctx, event, eBuilder);
+                sendErrorMessageInvalidRole(context);
                 return;
             }
-            User user;
-            if (event != null)
-                user = event.getUser();
-            else {
-                user = ctx.getAuthor();
-            }
+
+            User user = context.from == ContextModel.From.EVENT ? context.event.getUser() : context.ctx.getAuthor();
+
             if (!fireStoreService.getModel().getExcludedUserIds().contains(user.getId())) {
-                eBuilder.setTitle("Missing permissions");
-                eBuilder.setDescription("Hey! Only users with granted permissions can choose different role to ban\n" +
-                        "Try using the command without an argument to purge default role");
-                eBuilder.setColor(Color.RED);
-                messageUtils.respondToUser(ctx, event, eBuilder);
+                sendErrorMessageMissingPermissions(context);
                 return;
             }
-            banExactRole(ctx, event, guild, role, eBuilder);
+            banExactRole(context, role);
         } else {
             String roleToDelete = fireStoreService.getModel().getRolesToDelete().get(0);
-            Role role = guild.getRoleById(roleToDelete);
+            Role role = context.guild.getRoleById(roleToDelete);
             if (role == null) {
-                eBuilder.setTitle("An error occurred");
-                eBuilder.setDescription("Please provide valid role id or mention");
-                eBuilder.setColor(Color.RED);
-                messageUtils.respondToUser(ctx, event, eBuilder);
+                sendErrorMessageInvalidRole(context);
                 return;
             }
-            banExactRole(ctx, event, guild, role, eBuilder);
+            banExactRole(context, role);
         }
     }
 
-    private void banExactRole(CommandContext ctx, SlashCommandInteractionEvent event, Guild guild, Role role, EmbedBuilder eBuilder) {
-        Task<List<Member>> task = guild.findMembersWithRoles(role);
+    private void sendErrorMessageMissingPermissions(ContextModel context) {
+        EmbedBuilder eBuilder = new EmbedBuilder();
+        eBuilder.setTitle("Missing permissions");
+        eBuilder.setDescription("Hey! Only users with granted permissions can choose different role to ban\n" +
+                "Try using the command without an argument to purge default role");
+        eBuilder.setColor(Color.RED);
+        messageUtils.respondToUser(context.ctx, context.event, eBuilder);
+    }
 
-        task.onSuccess(members -> {
-            List<String> toBeBannedIds = new ArrayList<>();
-            members.forEach(member -> {
-                if (messageUtils.performMemberCheck(member)) return;
-                toBeBannedIds.add(member.getUser().getId());
-            });
-            messageUtils.respondToUser(ctx, event,  eBuilder.setTitle("Banning users")
-                    .setDescription("Banning users with role: **" + role.getName() + "**")
-                    .setColor(Color.GREEN));
-            messageUtils.banUsers(toBeBannedIds, guild, 365, TimeUnit.DAYS, "Niespełnianie wymagań wiekowych", true);
-        });
+    private void sendErrorMessageInvalidRole(ContextModel context) {
+        EmbedBuilder eBuilder = new EmbedBuilder();
+        eBuilder.setTitle("An error occurred");
+        eBuilder.setDescription("Please provide valid role id or mention");
+        eBuilder.setColor(Color.RED);
+        messageUtils.respondToUser(context.ctx, context.event, eBuilder);
+    }
+
+    private void banExactRole(ContextModel context, Role role) {
+        context.guild.findMembersWithRoles(role)
+                .onSuccess(members -> {
+                   /* members.forEach(member -> {
+                        if (messageUtils.performMemberCheck(member)) return;
+                        toBeBannedIds.add(member.getUser().getId());
+                    });*/
+                    List<String> toBeBannedIds = members.stream()
+                            .filter(member -> !messageUtils.performMemberCheck(member))
+                            .map(member -> member.getUser().getId())
+                            .toList();
+
+                    messageUtils.respondToUser(context.ctx, context.event,
+                            new EmbedBuilder().setTitle("Banning users")
+                            .setDescription("Banning users with role: **" + role.getName() + "**")
+                            .setColor(Color.GREEN));
+
+                    messageUtils.banUsers(toBeBannedIds, context.guild, 365, TimeUnit.DAYS, "Niespełnianie wymagań wiekowych", true);
+                });
     }
 
 }
