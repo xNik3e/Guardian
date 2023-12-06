@@ -4,6 +4,7 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import pl.xnik3e.Guardian.Models.ContextModel;
 import pl.xnik3e.Guardian.Models.NickNameModel;
 import pl.xnik3e.Guardian.Services.FireStoreService;
 import pl.xnik3e.Guardian.Utils.MessageUtils;
@@ -27,17 +28,13 @@ public class BobifyCommand implements ICommand {
 
     @Override
     public void handle(CommandContext ctx) {
-        boolean deleteTriggerMessage = fireStoreService.getModel().isDeleteTriggerMessage();
-        if (deleteTriggerMessage)
-            ctx.getMessage().delete().queue();
-        Guild guild = ctx.getGuild();
-        List<String> args = ctx.getArgs();
-        bobifyUser(ctx, null, args, guild);
+       messageUtils.deleteTrigger(ctx);
+        bobifyUser(new ContextModel(ctx));
     }
 
     @Override
     public void handleSlash(SlashCommandInteractionEvent event, List<String> args) {
-        bobifyUser(null, event, args, event.getGuild());
+        bobifyUser(new ContextModel(event, args));
     }
 
     @Override
@@ -82,66 +79,90 @@ public class BobifyCommand implements ICommand {
     }
 
 
-    private void bobifyUser(CommandContext ctx, SlashCommandInteractionEvent event, List<String> args, Guild guild) {
-        EmbedBuilder embedBuilder = new EmbedBuilder();
-        if (args.isEmpty()) {
-            embedBuilder.setTitle("Missing argument");
-            embedBuilder.setDescription("You must provide user id or mention");
-            embedBuilder.setColor(Color.RED);
-            messageUtils.respondToUser(ctx, event, embedBuilder);
+    private void bobifyUser(ContextModel context) {
+        if (context.args.isEmpty()) {
+            sendErrorMessageNoArguments(context);
             return;
         }
-        if (args.size() != 1) {
-            embedBuilder.setTitle("Too many arguments");
-            embedBuilder.setDescription("You must provide only one argument");
-            embedBuilder.setColor(Color.RED);
-            messageUtils.respondToUser(ctx, event, embedBuilder);
+        if (context.args.size() != 1) {
+            sendErrorMessageToManyArguments(context);
             return;
         }
 
         Matcher matcher = Pattern.compile("\\d+")
-                .matcher(args.get(0));
+                .matcher(context.args.get(0));
         if (!matcher.find()) {
-            embedBuilder.setTitle("Error");
-            embedBuilder.setDescription("Please provide valid user id");
-            embedBuilder.setColor(Color.RED);
-            messageUtils.respondToUser(ctx, event, embedBuilder);
+            sendErrorMessageInvalidID(context);
             return;
         }
         String userID = matcher.group();
 
         if (userID.equalsIgnoreCase("all")) {
             //UNLEASH THE BEAST
-            guild.findMembers(member -> !messageUtils.hasMentionableNickName(member))
-                    .onSuccess(members -> {
-                        members.forEach(messageUtils::bobify);
-                        embedBuilder.setTitle("Success");
-                        embedBuilder.setDescription("Bobified " + members.size() + " users");
-                        embedBuilder.setColor(Color.GREEN);
-                        messageUtils.respondToUser(ctx, event, embedBuilder);
-                    }).onError(error -> {
-                        embedBuilder.setTitle("Error");
-                        embedBuilder.setDescription("Something went wrong");
-                        embedBuilder.setColor(Color.RED);
-                        messageUtils.respondToUser(ctx, event, embedBuilder);
-                    });
+            bobifyAllUsers(context);
         } else {
-            guild.retrieveMemberById(userID).queue(member -> {
-                NickNameModel nickNameModel = fireStoreService.fetchNickNameModel(member.getId());
-                if(nickNameModel != null)
-                {
-                    String nickName = member.getEffectiveName();
-                    nickNameModel.getNickName().remove(nickName);
-                    fireStoreService.setNickModel(nickNameModel);
-                }
-                embedBuilder.setTitle("Success");
-                embedBuilder.setDescription("Bobified user " + member.getAsMention());
-                embedBuilder.addField("Previous nickname", member.getEffectiveName(), false);
-                embedBuilder.setColor(Color.GREEN);
-                messageUtils.bobify(member);
-                messageUtils.respondToUser(ctx, event, embedBuilder);
-            });
+            bobifySingleUser(context, userID);
         }
+    }
+
+    private void bobifySingleUser(ContextModel context, String userID) {
+        context.guild.retrieveMemberById(userID).queue(member -> {
+            NickNameModel nickNameModel = fireStoreService.fetchNickNameModel(member.getId());
+            if(nickNameModel != null) {
+                String nickName = member.getEffectiveName();
+                nickNameModel.getNickName()
+                        .remove(nickName);
+                fireStoreService.setNickModel(nickNameModel);
+            }
+            EmbedBuilder embedBuilder = new EmbedBuilder();
+            embedBuilder.setTitle("Success");
+            embedBuilder.setDescription("Bobified user " + member.getAsMention());
+            embedBuilder.addField("Previous nickname", member.getEffectiveName(), false);
+            embedBuilder.setColor(Color.GREEN);
+            messageUtils.bobify(member);
+            messageUtils.respondToUser(context.ctx, context.event, embedBuilder);
+        });
+    }
+
+    private void bobifyAllUsers(ContextModel context) {
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        context.guild.findMembers(member -> !messageUtils.hasMentionableNickName(member))
+                .onSuccess(members -> {
+                    members.forEach(messageUtils::bobify);
+                    embedBuilder.setTitle("Success");
+                    embedBuilder.setDescription("Bobified " + members.size() + " users");
+                    embedBuilder.setColor(Color.GREEN);
+                    messageUtils.respondToUser(context.ctx, context.event, embedBuilder);
+                }).onError(error -> {
+                    embedBuilder.setTitle("Error");
+                    embedBuilder.setDescription("Something went wrong");
+                    embedBuilder.setColor(Color.RED);
+                    messageUtils.respondToUser(context.ctx, context.event, embedBuilder);
+                });
+    }
+
+    private void sendErrorMessageInvalidID(ContextModel context) {
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setTitle("Error");
+        embedBuilder.setDescription("Please provide valid user id");
+        embedBuilder.setColor(Color.RED);
+        messageUtils.respondToUser(context.ctx, context.event, embedBuilder);
+    }
+
+    private void sendErrorMessageToManyArguments(ContextModel context) {
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setTitle("Too many arguments");
+        embedBuilder.setDescription("You must provide only one argument");
+        embedBuilder.setColor(Color.RED);
+        messageUtils.respondToUser(context.ctx, context.event, embedBuilder);
+    }
+
+    private void sendErrorMessageNoArguments(ContextModel context) {
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setTitle("Missing argument");
+        embedBuilder.setDescription("You must provide user id or mention");
+        embedBuilder.setColor(Color.RED);
+        messageUtils.respondToUser(context.ctx, context.event, embedBuilder);
     }
 
 
