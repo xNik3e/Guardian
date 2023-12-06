@@ -26,17 +26,16 @@ public class ResetCommand implements ICommand {
 
     @Override
     public void handle(CommandContext ctx) {
-        boolean deleteTriggerMessage = fireStoreService.getModel().isDeleteTriggerMessage();
-        if(deleteTriggerMessage)
-            ctx.getMessage().delete().queue();
-        MessageCreateData message = getMessageCreateData();
-        messageUtils.respondToUser(ctx, message);
+        messageUtils.deleteTrigger(ctx);
+        messageUtils.respondToUser(ctx, getMessageCreateData());
     }
 
     @Override
     public void handleSlash(SlashCommandInteractionEvent event, List<String> args) {
-        MessageCreateData message = getMessageCreateData();
-        event.getHook().sendMessage(message).setEphemeral(true).queue();
+        event.getHook()
+                .sendMessage(getMessageCreateData())
+                .setEphemeral(true)
+                .queue();
     }
 
     @Override
