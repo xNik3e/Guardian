@@ -23,20 +23,24 @@ public class ResetButton implements IButton {
 
     @Override
     public void handle(ButtonInteractionEvent event) {
-        if(!messageUtils.checkAuthority(event.getMember()))
-            return;
-        event.deferEdit().queue();
         Member member = messageUtils.getMemberFromButtonEvent(event);
-        if (messageUtils.checkAuthority(member)) {
-            fireStoreService.getModel().getDefaultConfig();
-            fireStoreService.updateConfigModel();
-            if (!event.getMessage().isEphemeral()) {
-                event.getMessage().delete().queue();
-                messageUtils.openPrivateChannelAndMessageUser(event.getUser(), getMessageEmbed());
-            } else {
-                event.getHook().editOriginalComponents().queue();
-                event.getHook().editOriginalEmbeds(getMessageEmbed()).queue();
-            }
+        if(!messageUtils.checkAuthority(member)) {
+            return;
+        }
+        event.deferEdit().queue();
+
+        fireStoreService.getModel().getDefaultConfig();
+        fireStoreService.updateConfigModel();
+        notifyUser(event);
+    }
+
+    private void notifyUser(ButtonInteractionEvent event) {
+        if (!event.getMessage().isEphemeral()) {
+            event.getMessage().delete().queue();
+            messageUtils.openPrivateChannelAndMessageUser(event.getUser(), getMessageEmbed());
+        } else {
+            event.getHook().editOriginalComponents().queue();
+            event.getHook().editOriginalEmbeds(getMessageEmbed()).queue();
         }
     }
 
