@@ -34,6 +34,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -461,7 +462,12 @@ public class MessageUtils {
                         builder.setDescription("You have been banned from " + guild.getName());
                         builder.addField("Reason", reason, false);
                         builder.setColor(Color.RED);
-                        openPrivateChannelAndMessageUser(user, builder.build());
+                        openPrivateChannelAndMessageUser(user, builder.build()).exceptionally(throwable -> {
+                            System.out.println("Throwable: " + throwable.getMessage());
+                            return null;
+                        });
+                    }, throwable -> {
+                        System.out.println("Throwable: " +throwable.getMessage());
                     });
         });
     }
@@ -606,7 +612,7 @@ public class MessageUtils {
                message.editMessage(getDeletedMessageEditBuilder().build()).queue();
            });
        }catch (Exception e){
-           System.out.println(e.getMessage());
+           System.out.println("Channel is null");
        }
 
 

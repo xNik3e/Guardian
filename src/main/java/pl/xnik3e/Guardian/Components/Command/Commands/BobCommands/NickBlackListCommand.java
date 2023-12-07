@@ -129,7 +129,7 @@ public class NickBlackListCommand implements ICommand {
         else
             fireStoreService.updateNickModel(model);
 
-        context.guild.retrieveMemberById(userID).delay(2, TimeUnit.SECONDS).queue(member -> {
+        context.guild.retrieveMemberById(userID).delay(5, TimeUnit.SECONDS).queue(member -> {
             if(!messageUtils.hasMentionableNickName(member))
                 messageUtils.bobify(member);
 

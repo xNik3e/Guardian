@@ -28,7 +28,7 @@ public class BobifyCommand implements ICommand {
 
     @Override
     public void handle(CommandContext ctx) {
-       messageUtils.deleteTrigger(ctx);
+        messageUtils.deleteTrigger(ctx);
         bobifyUser(new ContextModel(ctx));
     }
 

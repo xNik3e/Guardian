@@ -2,6 +2,7 @@ package pl.xnik3e.Guardian.Components.Button.Buttons;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageEditBuilder;
 import pl.xnik3e.Guardian.Models.CurseModel;
 import pl.xnik3e.Guardian.Services.FireStoreService;
@@ -27,7 +28,7 @@ public class CurseButton implements IButton {
     public void handle(ButtonInteractionEvent event) {
         if(!messageUtils.checkAuthority(event.getMember()))
             return;
-        event.deferReply().queue();
+        event.deferEdit().queue();
         MessageEditBuilder builder = new MessageEditBuilder();
         EmbedBuilder eBuilder = new EmbedBuilder();
         List<String> ids = new ArrayList<>();
@@ -40,7 +41,9 @@ public class CurseButton implements IButton {
             eBuilder.setColor(Color.GREEN);
             messageUtils.banUsers(ids, event.getGuild(), 0, TimeUnit.SECONDS, "Brak roli **kultysta**", false);
             fireStoreService.deleteCacheUntilNow(CurseModel.class);
-            builder.setEmbeds(eBuilder.build());
+            MessageCreateBuilder createBuilder = new MessageCreateBuilder();
+            createBuilder.setEmbeds(eBuilder.build());
+            builder.applyCreateData(createBuilder.build());
             event.getHook().editOriginal(builder.build()).queue();
         }, () -> {
             eBuilder.setTitle("Error");

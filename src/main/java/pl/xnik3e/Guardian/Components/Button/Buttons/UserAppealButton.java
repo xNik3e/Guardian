@@ -35,14 +35,16 @@ public class UserAppealButton implements IButton {
         MessageChannel logChannel = Objects.requireNonNull(event.getJDA().getGuildById(fireStoreService.getEnvironmentModel().getGUILD_ID()))
                 .getChannelById(MessageChannel.class, fireStoreService.getModel().getChannelIdToSendDeletedMessages());
         if (logChannel != null) {
-            sendMessageToMods(event, logChannel);
+            sendMessageToMods(event, logChannel, previousNick);
         }
     }
 
-    private static void sendMessageToMods(ButtonInteractionEvent event, MessageChannel logChannel) {
+    private static void sendMessageToMods(ButtonInteractionEvent event, MessageChannel logChannel, String previousNick) {
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setTitle("Odwołanie automatycznej zmiany nicku");
         embedBuilder.addField("User", event.getUser().getAsMention(), false);
+        embedBuilder.addField("Nick", previousNick, false);
+        embedBuilder.addField("UserID", event.getUser().getId(), false);
         embedBuilder.setDescription("Przeprowadzono automatyczną edycję nicku i użytkownik się odwołał\n" +
                 "Wybierz opcję poniżej");
         embedBuilder.setColor(Color.BLUE);
