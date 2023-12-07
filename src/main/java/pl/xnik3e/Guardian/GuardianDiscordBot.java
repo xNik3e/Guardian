@@ -12,10 +12,10 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import pl.xnik3e.Guardian.Models.EnvironmentModel;
 import pl.xnik3e.Guardian.Services.FireStoreService;
-import pl.xnik3e.Guardian.components.Command.SlashCommandUpdater;
-import pl.xnik3e.Guardian.listeners.BobNicknameChangeListener;
-import pl.xnik3e.Guardian.listeners.MessageCommandListener;
-import pl.xnik3e.Guardian.listeners.SlashCommandInteractionListener;
+import pl.xnik3e.Guardian.Components.Command.SlashCommandUpdater;
+import pl.xnik3e.Guardian.Listeners.BobNicknameChangeListener;
+import pl.xnik3e.Guardian.Listeners.MessageCommandListener;
+import pl.xnik3e.Guardian.Listeners.SlashCommandInteractionListener;
 
 @Component
 @Scope("singleton")
