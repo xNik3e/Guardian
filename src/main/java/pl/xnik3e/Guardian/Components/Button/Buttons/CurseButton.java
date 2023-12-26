@@ -39,7 +39,7 @@ public class CurseButton implements IButton {
             eBuilder.setTitle("Curse");
             eBuilder.setDescription("All the evil spirits have been sanctified and the curse has been lifted");
             eBuilder.setColor(Color.GREEN);
-            messageUtils.banUsers(ids, event.getGuild(), 0, TimeUnit.SECONDS, "Brak roli **kultysta**", false);
+            messageUtils.kickUsers(ids, event.getGuild(), "Brak roli **kultysta**");
             fireStoreService.deleteCacheUntilNow(CurseModel.class);
             MessageCreateBuilder createBuilder = new MessageCreateBuilder();
             createBuilder.setEmbeds(eBuilder.build());

@@ -354,6 +354,45 @@ public class MessageUtils {
         );
     }
 
+    public void kickUsers(List<String> toBeKicked, Guild guild, String reason) {
+        ConfigModel configModel = fireStoreService.getModel();
+        MessageChannel logChannel;
+        MessageChannel echoChannel;
+        MessageChannel channel = guild.getChannelById(MessageChannel.class, configModel.getChannelIdToSendDeletedMessages());
+        assert channel != null;
+
+        if (!configModel.getChannelIdToSendLog().isEmpty())
+            logChannel = guild.getChannelById(MessageChannel.class, configModel.getChannelIdToSendLog());
+        else {
+            logChannel = null;
+        }
+        if (!configModel.getChannelIdToSendEchoLog().isEmpty())
+            echoChannel = guild.getChannelById(MessageChannel.class, configModel.getChannelIdToSendEchoLog());
+        else {
+            echoChannel = null;
+        }
+        toBeKicked.forEach(
+                id -> guild.retrieveMemberById(id).queue(member -> {
+                    kickUser(member.getUser(), channel, guild, reason);
+                    StringBuilder sb = new StringBuilder();
+                    sb
+                            .append("<@")
+                            .append(id)
+                            .append("> - ")
+                            .append(member.getUser().getName())
+                            .append(" - ")
+                            .append("kick")
+                            .append(" ")
+                            .append(" - ")
+                            .append(reason.isEmpty() ? "No reason" : reason);
+                    if (logChannel != null)
+                        logChannel.sendMessage(sb.toString()).queue();
+                    if (echoChannel != null)
+                        echoChannel.sendMessage(sb.toString()).queue();
+                })
+        );
+    }
+
     /**
      * Checks if member should be excluded from bot actions.
      * <p></p>
@@ -374,6 +413,55 @@ public class MessageUtils {
         return excludedMembers.contains(member.getUser().getId());
     }
 
+    /**
+     * Kick member from guild.
+     * <p></p>
+     *
+     * @param user User to check
+     * @param channel channel to send message to
+     * @param guild guild to kick user from
+     * @param reason reason of kick
+     */
+    private void kickUser(@NonNull User user, MessageChannel channel, Guild guild, String reason){
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setAuthor(
+                user.getName() + " has been kicked",
+                null,
+                user.getAvatarUrl());
+        embedBuilder.setDescription("**Reason:** " + reason);
+        embedBuilder.setColor(0x5acff5);
+
+        MessageCreateData message = new MessageCreateBuilder()
+                .setEmbeds(embedBuilder.build())
+                .build();
+
+        channel.sendMessage(message).queue(m -> {
+            guild.kick(user).queue(s -> {
+                EmbedBuilder builder = new EmbedBuilder();
+                builder.setTitle("Kicked");
+                builder.setDescription("You have been kicked from " + guild.getName());
+                builder.addField("Reason", reason, false);
+                builder.setColor(Color.RED);
+                openPrivateChannelAndMessageUser(user, builder.build()).exceptionally(throwable -> {
+                    System.out.println("Throwable: " + throwable.getMessage());
+                    return null;
+                });
+            });
+        });
+    }
+
+
+    /**
+     * Temp ban member from guild.
+     * <p></p>
+     *
+     * @param user User to check
+     * @param channel channel to send message to
+     * @param guild guild to ban user from
+     * @param time time of ban
+     * @param timeUnit time unit of ban
+     * @param reason reason of ban
+     */
     private void tempBanUser(@NonNull User user, MessageChannel channel, Guild guild, long time, TimeUnit timeUnit, String reason) {
         TempBanModel tempBanModel = new TempBanModel();
         long timeInMillis = System.currentTimeMillis() + timeUnit.toMillis(time);
@@ -467,7 +555,7 @@ public class MessageUtils {
                             return null;
                         });
                     }, throwable -> {
-                        System.out.println("Throwable: " +throwable.getMessage());
+                        System.out.println("Throwable: " + throwable.getMessage());
                     });
         });
     }
@@ -606,25 +694,25 @@ public class MessageUtils {
     }
 
     private static <T extends BasicCacheModel> void editMessageInGuildTextChannel(JDA jda, T model) {
-       try{
-           TextChannel textChannel = jda.getTextChannelById(model.getChannelId());
-           Objects.requireNonNull(textChannel).retrieveMessageById(model.getMessageID()).queue(message -> {
-               message.editMessage(getDeletedMessageEditBuilder().build()).queue();
-           });
-       }catch (Exception e){
-           System.out.println("Channel is null");
-       }
+        try {
+            TextChannel textChannel = jda.getTextChannelById(model.getChannelId());
+            Objects.requireNonNull(textChannel).retrieveMessageById(model.getMessageID()).queue(message -> {
+                message.editMessage(getDeletedMessageEditBuilder().build()).queue();
+            });
+        } catch (Exception e) {
+            System.out.println("Channel is null");
+        }
 
 
     }
 
     private static <T extends BasicCacheModel> void editMessageInPrivateChannel(JDA jda, T model) {
-        try{
+        try {
             PrivateChannel privateChannel = jda.getPrivateChannelById(model.getChannelId());
             Objects.requireNonNull(privateChannel).retrieveMessageById(model.getMessageID()).queue(message -> {
                 message.editMessage(getDeletedMessageEditBuilder().build()).queue();
             });
-        }catch(Exception e){
+        } catch (Exception e) {
             System.out.println(e.getMessage());
         }
     }
@@ -639,7 +727,7 @@ public class MessageUtils {
 
     public void deleteTrigger(CommandContext ctx) {
         boolean deleteTriggerMessage = fireStoreService.getModel().isDeleteTriggerMessage();
-        if(deleteTriggerMessage)
+        if (deleteTriggerMessage)
             ctx.getMessage().delete().queue();
     }
 
